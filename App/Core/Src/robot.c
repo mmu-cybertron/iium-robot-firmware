@@ -1,5 +1,8 @@
 #include "robot.h"
+#include "robot_config.h"
+#include "main.h"
 
+#include "motion.h"
 #include "edge_detector.h"
 #include "failsafe.h"
 #include "motor_control.h"
@@ -9,22 +12,40 @@
 void robot_init(void)
 {
     motor_control_init();
-    edge_detector_init();
-    opponent_tracker_init();
-    failsafe_init();
-    state_machine_init();
+    // edge_detector_init();
+    // opponent_tracker_init();
+    // failsafe_init();
+    // state_machine_init();
 }
+
+// Where the robot reads sensors, decides behavior, and updates motor PWM.
+// Examples: read sensors, update edge detection, update opponent detection, choose movement, update motors
 
 void robot_update(void)
 {
-    edge_detector_update();
-    opponent_tracker_update();
     failsafe_update();
-    state_machine_update();
+    
+    if (failsafe_is_faulted()) {
+        motor_control_stop();
+        motor_control_update();
+        return;
+    }
+
+    // edge_detector_update();
+    // opponent_tracker_update();
+    
+    // state_machine_update();
+    
+    motor_control_set_command(motion_forward(500));
     motor_control_update();
 }
+
+// Call as often as possible inside the infinite loop. It is for non-timing-critical background tasks.
+// Examples: checking communication, debug LED blinking, low-priority monitoring, background failsafe work, telemetry later
 
 void robot_background(void)
 {
     failsafe_background();
 }
+
+

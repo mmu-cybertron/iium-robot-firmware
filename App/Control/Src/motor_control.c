@@ -35,6 +35,7 @@ void motor_control_stop(void)
 {
     current_command.left_pwm = 0;
     current_command.right_pwm = 0;
+    motor_driver_brake();
 }
 
 void motor_control_update(void)

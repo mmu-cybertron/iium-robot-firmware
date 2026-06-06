@@ -55,9 +55,9 @@ Call `app_main()` after all `MX_*_Init()` functions:
 
 ```c
 MX_GPIO_Init();
-MX_ADC1_Init();
-MX_TIM1_Init();
-MX_USART2_UART_Init();
+MX_I2C1_Init();
+MX_TIM2_Init();
+MX_TIM3_Init();
 
 app_main();
 ```

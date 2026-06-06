@@ -52,6 +52,9 @@ build/
 *.i*86
 *.x86_64
 *.hex
+*.bin
+*.list
+*.lst
 
 # Debug files
 *.dSYM/
@@ -59,6 +62,12 @@ build/
 *.cyclo
 *.idb
 *.pdb
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+*~
 
 # Kernel Module Compile Results
 *.mod*
@@ -72,3 +81,6 @@ dkms.conf
 # debug information files
 *.dwo
 .omx/
+
+# STM32CubeIDE / Eclipse generated local scanner metadata
+.settings/language.settings.xml

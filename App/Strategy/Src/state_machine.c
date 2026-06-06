@@ -37,10 +37,17 @@ void state_machine_update(void)
 
     case ROBOT_STATE_SEARCH:
         motor_control_set_command(motion_rotate_left(350));
+        // Future should looks like:
+        //  if (opponent.left) {
+        //     motor_control_set_command(motion_rotate_left(450));
+        // } else if (opponent.right) {
+        //     motor_control_set_command(motion_rotate_right(450));
+        // } else {
+        //     motor_control_set_command(motion_rotate_left(350));
+        // }
         break;
 
     case ROBOT_STATE_IDLE:
-    case ROBOT_STATE_START_DELAY:
     case ROBOT_STATE_RECOVER:
     case ROBOT_STATE_FAULT:
     default:
