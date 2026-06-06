@@ -10,8 +10,9 @@ CubeMX initializes the STM32. After that, it calls `app_main()`.
 
 ```c
 MX_GPIO_Init();
-MX_ADC1_Init();
-MX_TIM1_Init();
+MX_I2C1_Init();
+MX_TIM2_Init();
+MX_TIM3_Init();
 
 app_main();
 ```
