@@ -1,3 +1,20 @@
+# macOS
+.DS_Store
+
+# STM32CubeIDE / Eclipse workspace-local metadata
+.metadata/
+
+# STM32CubeIDE generated build output
+Debug/
+Release/
+build/
+
+# Local editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
 # Prerequisites
 *.d
 
@@ -39,6 +56,7 @@
 # Debug files
 *.dSYM/
 *.su
+*.cyclo
 *.idb
 *.pdb
 
@@ -53,3 +71,4 @@ dkms.conf
 
 # debug information files
 *.dwo
+.omx/
