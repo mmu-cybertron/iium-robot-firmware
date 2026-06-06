@@ -28,16 +28,11 @@ while (1) {
 
 ## Folder Map
 
-- `Core/`: robot lifecycle, config, shared types.
-- `BSP/`: STM32 HAL access and board pin/timer/ADC mapping.
-- `Drivers/`: specific hardware drivers, such as motors and sensors.
-- `Services/`: meaningful robot information built from drivers.
-- `Control/`: motion and motor command logic.
-- `Strategy/`: sumo behavior and state machine.
-- `Utils/`: small reusable helper code.
+- `Inc/`: all robot-owned headers.
+- `Src/`: all robot-owned source files.
 
 ## Rule of Thumb
 
-If the code knows about STM32 pins, timers, ADC, or UART, put it near `BSP/` or
-`Drivers/`. If the code decides how the robot should behave in the ring, put it
-near `Strategy/`.
+Keep STM32CubeMX-generated code in the project-root `Core/` and `Drivers/`
+folders. Keep robot behavior, drivers, services, and control code in `App/Src`
+with matching public headers in `App/Inc`.
