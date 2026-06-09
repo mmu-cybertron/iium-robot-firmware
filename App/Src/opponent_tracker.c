@@ -1,6 +1,7 @@
 #include "opponent_tracker.h"
 
 #include "distance_sensor.h"
+#include "usart1_log.h"
 
 static opponent_status_t current_opponent;
 
@@ -13,6 +14,7 @@ void opponent_tracker_init(void)
 void opponent_tracker_update(void)
 {
     current_opponent = distance_sensor_read_opponent();
+    
 }
 
 opponent_status_t opponent_tracker_get_status(void)

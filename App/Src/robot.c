@@ -8,14 +8,17 @@
 #include "motor_control.h"
 #include "opponent_tracker.h"
 #include "state_machine.h"
+#include "usart1_log.h"
 
 void robot_init(void)
 {
     motor_control_init();
-    // edge_detector_init();
-    // opponent_tracker_init();
-    // failsafe_init();
-    // state_machine_init();
+    edge_detector_init();
+    opponent_tracker_init();
+    failsafe_init();
+    state_machine_init();
+
+    LOG_PRINT("Robot initialized\r\n");
 }
 
 // Where the robot reads sensors, decides behavior, and updates motor PWM.
@@ -31,12 +34,15 @@ void robot_update(void)
         return;
     }
 
-    // edge_detector_update();
-    // opponent_tracker_update();
+    edge_detector_update();
+    opponent_tracker_update();
+    // LOG_PRINT("In LOOP\r\n");
+
     
-    // state_machine_update();
+
     
-    motor_control_set_command(motion_forward(500));
+    state_machine_update();
+    
     motor_control_update();
 }
 
