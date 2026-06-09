@@ -5,6 +5,8 @@
 #include "motor_control.h"
 #include "motion.h"
 #include "opponent_tracker.h"
+#include "robot_config.h"
+#include "usart1_log.h"
 
 static robot_state_t current_state;
 
@@ -16,35 +18,43 @@ void state_machine_init(void)
 
 void state_machine_update(void)
 {
+    const opponent_status_t opponent = opponent_tracker_get_status();
+
     if (failsafe_is_faulted()) {
         current_state = ROBOT_STATE_FAULT;
-    } else if (edge_detector_is_edge_detected()) {
-        current_state = ROBOT_STATE_EDGE_ESCAPE;
-    } else if (opponent_tracker_has_target()) {
+    // } else if (edge_detector_is_edge_detected()) {
+    //     current_state = ROBOT_STATE_EDGE_ESCAPE;
+    } else if (opponent.front) {
         current_state = ROBOT_STATE_ATTACK;
+    } else if (opponent.left || opponent.right) {
+        current_state = ROBOT_STATE_SEARCH;
     } else {
         current_state = ROBOT_STATE_SEARCH;
     }
 
     switch (current_state) {
     case ROBOT_STATE_ATTACK:
-        motor_control_set_command(motion_forward(700));
+        
+        motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
+        LOG_PRINT("Attacking with PWM: %d\r\n", ROBOT_ATTACK_PWM);
         break;
 
     case ROBOT_STATE_EDGE_ESCAPE:
-        motor_control_set_command(motion_reverse(600));
+        motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
+        LOG_PRINT("Edge detected! Escaping with PWM: %d\r\n", ROBOT_EDGE_ESCAPE_PWM);
         break;
 
     case ROBOT_STATE_SEARCH:
-        motor_control_set_command(motion_rotate_left(350));
-        // Future should looks like:
-        //  if (opponent.left) {
-        //     motor_control_set_command(motion_rotate_left(450));
-        // } else if (opponent.right) {
-        //     motor_control_set_command(motion_rotate_right(450));
-        // } else {
-        //     motor_control_set_command(motion_rotate_left(350));
-        // }
+        if (opponent.left) {
+            motor_control_set_command(motion_rotate_left(ROBOT_TRACK_PWM));
+            LOG_PRINT("Opponent on the left! Rotating left with PWM: %d\r\n", ROBOT_TRACK_PWM);
+        } else if (opponent.right) {
+            motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
+            LOG_PRINT("Opponent on the right! Rotating right with PWM: %d\r\n", ROBOT_TRACK_PWM);
+        } else {
+            motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
+            LOG_PRINT("No opponent detected! Searching with PWM: %d\r\n", ROBOT_SEARCH_PWM);
+        }
         break;
 
     case ROBOT_STATE_IDLE:
