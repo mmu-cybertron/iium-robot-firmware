@@ -37,6 +37,8 @@ typedef struct {
     uint8_t front;
     uint8_t left;
     uint8_t right;
+    uint8_t rear_right;     // NEW
+    uint8_t rear_left;
     uint16_t distance_mm;
 } opponent_status_t;
 

@@ -50,6 +50,8 @@
 #define VL53L1__ADDR		0x52	// the I2C chip address
 #define VL53L1__ADDR_LEFT   0x54   // reassigned at boot
 #define VL53L1__ADDR_FRONT  0x56   // reassigned at boot
+#define VL53L1__ADDR_REARRIGHT   0x58   //
+#define VL53L1__ADDR_REARLEFT 0x5A
 
 
 
@@ -100,6 +102,10 @@
 #define VL53L1__CALIB_XTALK_LEFT    (0)
 #define VL53L1__CALIB_XTALK_FRONT   (0)
 #define VL53L1__CALIB_XTALK_RIGHT   (0)
+#define VL53L1__CALIB_OFFSET_REARRIGHT  (0)
+#define VL53L1__CALIB_OFFSET_REARLEFT   (0)
+#define VL53L1__CALIB_XTALK_REARRIGHT   (0)
+#define VL53L1__CALIB_XTALK_REARLEFT    (0)
 /*****************     STEP 5     *****************
  ************* range status threeshold*************
  * set the Range_Status level accepted as a good
@@ -226,6 +232,6 @@ int8_t VL53L1_WaitMs(
 
 
 uint8_t VL53L1__InitAll(void);
-uint8_t VL53L1__ReadAll(uint16_t *left, uint16_t *front, uint16_t *right);
+uint8_t VL53L1__ReadAll(uint16_t *left, uint16_t *front, uint16_t *right, uint16_t *rearright, uint16_t *rearleft);
 uint16_t VL53L1__ReadOne(uint16_t addr);
 #endif
