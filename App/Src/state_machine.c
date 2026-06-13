@@ -22,8 +22,8 @@ void state_machine_update(void)
 
     if (failsafe_is_faulted()) {
         current_state = ROBOT_STATE_FAULT;
-    // } else if (edge_detector_is_edge_detected()) {
-    //     current_state = ROBOT_STATE_EDGE_ESCAPE;
+    } else if (edge_detector_is_edge_detected()) {
+        current_state = ROBOT_STATE_EDGE_ESCAPE;
     } else if (opponent.front) {
         current_state = ROBOT_STATE_ATTACK;
     } else if (opponent.left || opponent.right) {
@@ -36,7 +36,7 @@ void state_machine_update(void)
     case ROBOT_STATE_ATTACK:
         
         motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
-        LOG_PRINT("Attacking with PWM: %d\r\n", ROBOT_ATTACK_PWM);
+        LOG_PRINT("Attacking\n");
         break;
 
     case ROBOT_STATE_EDGE_ESCAPE:
@@ -47,13 +47,13 @@ void state_machine_update(void)
     case ROBOT_STATE_SEARCH:
         if (opponent.left) {
             motor_control_set_command(motion_rotate_left(ROBOT_TRACK_PWM));
-            LOG_PRINT("Opponent on the left! Rotating left with PWM: %d\r\n", ROBOT_TRACK_PWM);
+            LOG_PRINT("Opponent on the left! Rotating left\n");
         } else if (opponent.right) {
             motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
-            LOG_PRINT("Opponent on the right! Rotating right with PWM: %d\r\n", ROBOT_TRACK_PWM);
+            LOG_PRINT("Opponent on the right! Rotating right\n");
         } else {
             motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
-            LOG_PRINT("No opponent detected! Searching with PWM: %d\r\n", ROBOT_SEARCH_PWM);
+            LOG_PRINT("No opponent detected! Searching\n"); 
         }
         break;
 

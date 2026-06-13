@@ -1,7 +1,7 @@
 #include "line_sensor.h"
 #include "main.h"
 
-#define LINE_DETECTED_STATE GPIO_PIN_SET
+#define LINE_DETECTED_STATE GPIO_PIN_RESET
 
 void line_sensor_init(void)
 {
