@@ -53,7 +53,7 @@ void state_machine_update(void)
             LOG_PRINT("Opponent on the right! Rotating right\n");
         } else {
             motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
-            LOG_PRINT("No opponent detected! Searching\n"); 
+            // LOG_PRINT("No opponent detected! Searching\n"); 
         }
         break;
 
