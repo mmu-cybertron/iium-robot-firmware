@@ -84,8 +84,22 @@ void Error_Handler(void);
 #define XSHUT_1_Pin GPIO_PIN_7
 #define XSHUT_1_GPIO_Port GPIOB
 
+
 /* USER CODE BEGIN Private defines */
 
+   /* GPIO Pin definitions for buttons */
+#define MODE_PIN_PB12           GPIO_PIN_12
+#define MODE_PIN_GPIO_Port_PB12 GPIOB
+#define CONFIRM_PIN_PB13        GPIO_PIN_13
+#define CONFIRM_PIN_GPIO_Port_PB13 GPIOB
+
+/* GPIO Pin definitions for LEDs */
+#define MODE1_LED_PIN       GPIO_PIN_15
+#define MODE1_LED_GPIO_Port GPIOB
+#define MODE2_LED_PIN       GPIO_PIN_14
+#define MODE2_LED_GPIO_Port GPIOB
+#define MODE3_LED_PIN       GPIO_PIN_8
+#define MODE3_LED_GPIO_Port GPIOA
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -8,9 +8,12 @@
 #include "robot.h"
 #include "robot_config.h"
 #include "usart1_log.h"
+#include "game_mode_selector.h"
 
 extern uint32_t HAL_GetTick(void);
 extern UART_HandleTypeDef huart1;
+#define SM_Signal_Pin GPIO_PIN_13
+#define SM_Signal_GPIO_Port GPIOC
 
 HAL_StatusTypeDef usart1_log_write(const uint8_t *data, size_t length)
 {
@@ -102,11 +105,48 @@ int __io_getchar(void)
 void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
+    uint8_t game_started = 0;
+
+    LOG_PRINT("USART1 logging ready\r\n");
+
+    /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
+    LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
+    game_mode_selector_init();
+
+    while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_RESET) {
+        /* Mode selection update - call regularly for button debouncing */
+        game_mode_selector_update();
+
+        /* Check if mode is locked and ready */
+        if (game_mode_selector_is_locked()) {
+            LOG_PRINT("Mode locked. Waiting for SM_Signal_Pin to go HIGH to start game...\r\n");
+            break;
+        }
+    }
+
+    /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
+    LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
+    LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
 
     robot_init();
-    LOG_PRINT("USART1 logging ready, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
+    LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
 
-    while (1) {
+    /* Execute initial move before state machine starts */
+    while (!game_mode_selector_is_initial_move_done()) {
+        game_mode_selector_execute_initial_move();
+        motor_control_update();
+
+        const uint32_t now_ms = HAL_GetTick();
+        if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+            last_update_ms = now_ms;
+            robot_background();
+        }
+    }
+
+    LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+
+    /* Main game loop */
+    while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_SET) {
         const uint32_t now_ms = HAL_GetTick();
 
         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
@@ -116,4 +156,12 @@ void app_main(void)
 
         robot_background();
     }
+
+    /* Game ended, reset for next round */
+    LOG_PRINT("SM_Signal_Pin went LOW. Round ended.\r\n");
+    game_mode_selector_reset_for_new_round();
+    motor_control_stop();
+    
+    /* Loop back to mode selection for next round */
+    app_main();
 }
