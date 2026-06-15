@@ -262,8 +262,9 @@ uint8_t status=0;
 }
 
 /*************************************************************
- * @brief  Initialize all 3 sensors using XSHUT sequencing.
- *         Assigns unique I2C addresses via address reassignment.
+ * @brief  Initialize the three VL53L1 sensors using XSHUT sequencing.
+ *         The two rear sensor channels are handled by the VL53L0X
+ *         path in the distance sensor layer.
  *
  *  Sequence:
  *   1. All XSHUT LOW  -> all off
@@ -274,12 +275,10 @@ uint8_t status=0;
 uint8_t VL53L1__InitAll(void) {
     uint8_t status = 0;
 
-    // Shut ALL sensors down first
+    // Shut the three VL53L1 sensors down first.
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_RESET);  // LEFT
     HAL_GPIO_WritePin(GPIOB, XSHUT_2_Pin, GPIO_PIN_RESET);  // FRONT
     HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_RESET);  // RIGHT
-    HAL_GPIO_WritePin(GPIOB, XSHUT_4_Pin, GPIO_PIN_RESET);  // REAR   <-- NEW pin
-    HAL_GPIO_WritePin(GPIOB, XSHUT_5_Pin, GPIO_PIN_RESET);  // RIGHT2 <-- NEW pin
     HAL_Delay(10);
 
     /* LEFT: 0x52 -> 0x54 */
@@ -303,28 +302,6 @@ uint8_t VL53L1__InitAll(void) {
     status |= VL53L1X_SetDistanceMode(VL53L1__ADDR_FRONT, VL53L1__DISTANCE_MODE);
     status |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_FRONT, VL53L1__TIMING_BUDGET);
     status |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_FRONT, VL53L1__INTERMEASUREMENT);
-
-    /* REAR RIGHT: 0x52 -> 0x58 */
-    HAL_GPIO_WritePin(GPIOB, XSHUT_4_Pin, GPIO_PIN_SET);
-    HAL_Delay(5);
-    status |= VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_REARRIGHT);
-    status |= VL53L1X_SensorInit(VL53L1__ADDR_REARRIGHT);
-    status |= VL53L1X_SetOffset(VL53L1__ADDR_REARRIGHT, VL53L1__CALIB_OFFSET_REARRIGHT);
-    status |= VL53L1X_SetXtalk(VL53L1__ADDR_REARRIGHT, VL53L1__CALIB_XTALK_REARRIGHT);
-    status |= VL53L1X_SetDistanceMode(VL53L1__ADDR_REARRIGHT, VL53L1__DISTANCE_MODE);
-    status |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_REARRIGHT, VL53L1__TIMING_BUDGET);
-    status |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_REARRIGHT, VL53L1__INTERMEASUREMENT);
-
-    /* REAR LEFT: 0x52 -> 0x5A */
-    HAL_GPIO_WritePin(GPIOB, XSHUT_5_Pin, GPIO_PIN_SET);
-    HAL_Delay(5);
-    status |= VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_REARLEFT);
-    status |= VL53L1X_SensorInit(VL53L1__ADDR_REARLEFT);
-    status |= VL53L1X_SetOffset(VL53L1__ADDR_REARLEFT, VL53L1__CALIB_OFFSET_REARLEFT);
-    status |= VL53L1X_SetXtalk(VL53L1__ADDR_REARLEFT, VL53L1__CALIB_XTALK_REARLEFT);
-    status |= VL53L1X_SetDistanceMode(VL53L1__ADDR_REARLEFT, VL53L1__DISTANCE_MODE);
-    status |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_REARLEFT, VL53L1__TIMING_BUDGET);
-    status |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_REARLEFT, VL53L1__INTERMEASUREMENT);
 
     /* RIGHT: stays at 0x52 — bring up last */
     HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_SET);
@@ -372,9 +349,16 @@ uint8_t VL53L1__InitAll(void) {
     *left  = VL53L1__ReadOne(VL53L1__ADDR_LEFT);
     *front = VL53L1__ReadOne(VL53L1__ADDR_FRONT);
     *right = VL53L1__ReadOne(VL53L1__ADDR);
-    *rearright   = VL53L1__ReadOne(VL53L1__ADDR_REARRIGHT);    // NEW
-    *rearleft = VL53L1__ReadOne(VL53L1__ADDR_REARLEFT);
-    //
-    //
+
+    /* The two rear channels are handled by the VL53L0X path in the
+       distance sensor layer, so keep the L1 readout limited to the
+       three existing VL53L1 sensors. */
+    if (rearright != NULL) {
+        *rearright = 0U;
+    }
+    if (rearleft != NULL) {
+        *rearleft = 0U;
+    }
+
     return 0;
 }
