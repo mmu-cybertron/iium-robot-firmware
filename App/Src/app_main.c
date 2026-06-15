@@ -9,6 +9,9 @@
 #include "robot_config.h"
 #include "usart1_log.h"
 #include "game_mode_selector.h"
+#include "distance_sensor.h"
+#include "vl53l1_platform.h"
+#include "VL53L1X_api.h"
 
 extern uint32_t HAL_GetTick(void);
 extern UART_HandleTypeDef huart1;
@@ -109,6 +112,10 @@ void app_main(void)
 
     LOG_PRINT("USART1 logging ready\r\n");
 
+    distance_sensor_init();
+
+    LOG_PRINT("Distance sensors initialized and ranging started\r\n");
+
     // /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
     // LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
     // game_mode_selector_init();
@@ -148,6 +155,20 @@ void app_main(void)
     /* Main game loop */
     while (1) {
         const uint32_t now_ms = HAL_GetTick();
+        const opponent_status_t tofData = distance_sensor_read_opponent();
+
+// Log all sensors periodically (every 200ms to avoid flooding UART)
+static uint32_t last_sensor_log_ms = 0U;
+if ((now_ms - last_sensor_log_ms) >= 200U) {
+    last_sensor_log_ms = now_ms;
+    LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+              (int)tofData.front,
+              (int)tofData.left,
+              (int)tofData.right,
+              (int)tofData.rear_right,
+              (int)tofData.rear_left,
+              (unsigned int)tofData.distance_mm);
+}
 
         if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
             if ((now_ms - last_wait_log_ms) >= 1000U) {
