@@ -36,11 +36,7 @@ static int16_t clamp_pwm(int16_t pwm)
 
 static uint32_t pwm_magnitude(int16_t pwm)
 {
-    if (pwm <= MOTOR_PWM_MIN) {
-        return (uint32_t)MOTOR_PWM_MAX;
-    }
-
-    return (pwm < 0) ? (uint32_t)-pwm : (uint32_t)pwm;
+    return (uint32_t)clamp_pwm(pwm);
 }
 
 static void set_motor_pwm(TIM_HandleTypeDef *timer,
