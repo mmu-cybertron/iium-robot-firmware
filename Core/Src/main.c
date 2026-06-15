@@ -213,9 +213,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 3;
+  htim2.Init.Prescaler = 83;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1023;
+  htim2.Init.Period = 19999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -262,9 +262,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 3;
+  htim3.Init.Prescaler = 83;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1023;
+  htim3.Init.Period = 19999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -347,8 +347,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, LEFT_DIR_Pin|RIGHT_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, XSHUT_5_Pin|XSHUT_4_Pin|XSHUT_3_Pin|XSHUT_2_Pin
-                          |XSHUT_1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin|XSHUT_2_Pin|XSHUT_3_Pin|XSHUT_4_Pin
+                          |XSHUT_5_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SM_Signal_Pin */
   GPIO_InitStruct.Pin = SM_Signal_Pin;
@@ -369,10 +369,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : XSHUT_5_Pin XSHUT_4_Pin XSHUT_3_Pin XSHUT_2_Pin
-                           XSHUT_1_Pin */
-  GPIO_InitStruct.Pin = XSHUT_5_Pin|XSHUT_4_Pin|XSHUT_3_Pin|XSHUT_2_Pin
-                          |XSHUT_1_Pin;
+  /*Configure GPIO pins : XSHUT_1_Pin XSHUT_2_Pin XSHUT_3_Pin XSHUT_4_Pin
+                           XSHUT_5_Pin */
+  GPIO_InitStruct.Pin = XSHUT_1_Pin|XSHUT_2_Pin|XSHUT_3_Pin|XSHUT_4_Pin
+                          |XSHUT_5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

@@ -105,49 +105,58 @@ int __io_getchar(void)
 void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
-    uint8_t game_started = 0;
+    uint32_t last_wait_log_ms = HAL_GetTick();
 
     LOG_PRINT("USART1 logging ready\r\n");
 
-    /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
-    LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
-    game_mode_selector_init();
+    // /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
+    // LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
+    // game_mode_selector_init();
 
-    while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_RESET) {
-        /* Mode selection update - call regularly for button debouncing */
-        game_mode_selector_update();
+    // while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_RESET) {
+    //     /* Mode selection update - call regularly for button debouncing */
+    //     game_mode_selector_update();
 
-        /* Check if mode is locked and ready */
-        if (game_mode_selector_is_locked()) {
-            LOG_PRINT("Mode locked. Waiting for SM_Signal_Pin to go HIGH to start game...\r\n");
-            break;
-        }
-    }
+    //     /* Check if mode is locked and ready */
+    //     if (game_mode_selector_is_locked()) {
+    //         LOG_PRINT("Mode locked. Waiting for SM_Signal_Pin to go HIGH to start game...\r\n");
+    //         break;
+    //     }
+    // }
 
-    /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
-    LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
-    LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
+    // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
+    // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
+    // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
 
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
 
-    /* Execute initial move before state machine starts */
-    while (!game_mode_selector_is_initial_move_done()) {
-        game_mode_selector_execute_initial_move();
-        motor_control_update();
+    // /* Execute initial move before state machine starts */
+    // while (!game_mode_selector_is_initial_move_done()) {
+    //     game_mode_selector_execute_initial_move();
+    //     motor_control_update();
 
-        const uint32_t now_ms = HAL_GetTick();
-        if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
-            last_update_ms = now_ms;
-            robot_background();
-        }
-    }
+    //     const uint32_t now_ms = HAL_GetTick();
+    //     if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+    //         last_update_ms = now_ms;
+    //         robot_background();
+    //     }
+    // }
 
-    LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+    // LOG_PRINT("Initial move complete. Entering state machine...\r\n");
 
     /* Main game loop */
-    while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_SET) {
+    while (1) {
         const uint32_t now_ms = HAL_GetTick();
+
+        if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+            if ((now_ms - last_wait_log_ms) >= 1000U) {
+                last_wait_log_ms = now_ms;
+                LOG_PRINT("Waiting for SM_Signal_Pin HIGH to run robot_update()\r\n");
+            }
+            robot_background();
+            continue;
+        }
 
         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
             last_update_ms = now_ms;
@@ -157,11 +166,11 @@ void app_main(void)
         robot_background();
     }
 
-    /* Game ended, reset for next round */
-    LOG_PRINT("SM_Signal_Pin went LOW. Round ended.\r\n");
-    game_mode_selector_reset_for_new_round();
-    motor_control_stop();
+    // /* Game ended, reset for next round */
+    // LOG_PRINT("SM_Signal_Pin went LOW. Round ended.\r\n");
+    // game_mode_selector_reset_for_new_round();
+    // motor_control_stop();
     
-    /* Loop back to mode selection for next round */
-    app_main();
+    // /* Loop back to mode selection for next round */
+    // app_main();
 }
