@@ -13,11 +13,12 @@
 void robot_init(void)
 {
 	LOG_PRINT("Hello from init\n");
-    // motor_control_init();
+    motor_control_init();
+    HAL_Delay(1000);
     //edge_detector_init();
-    opponent_tracker_init();
+    // opponent_tracker_init();
     failsafe_init();
-    state_machine_init();
+    // state_machine_init();
 
     LOG_PRINT("Robot initialized\r\n");
 }
@@ -27,6 +28,12 @@ void robot_init(void)
 
 void robot_update(void)
 {
+    static uint8_t motor_test_done;
+
+    if (motor_test_done) {
+        return;
+    }
+
     failsafe_update();
     
     if (failsafe_is_faulted()) {
@@ -36,15 +43,27 @@ void robot_update(void)
     }
 
     //edge_detector_update();
-     opponent_tracker_update();
+    //  opponent_tracker_update();
      LOG_PRINT("HI\n");
+     
 
+    motor_control_set_pwm(1700, 1300);
+    motor_control_update();
     
+    // LOG_PRINT("HI2\n");
+    // // state_machine_update();
+    
+   
+    // HAL_Delay(1000);
 
-    
-    state_machine_update();
-    
+    // motor_control_set_pwm(1100, 1100);
     // motor_control_update();
+
+    // HAL_Delay(1000);
+
+    // motor_control_stop();
+    motor_test_done = 1U;
+    LOG_PRINT("Motor test complete\r\n");
 }
 
 // Call as often as possible inside the infinite loop. It is for non-timing-critical background tasks.
