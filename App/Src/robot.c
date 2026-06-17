@@ -30,17 +30,15 @@ void robot_update(void)
 {
     static uint8_t motor_test_done;
 
-    if (motor_test_done) {
-        return;
-    }
-
-    failsafe_update();
+    if (!motor_test_done) {
+        //return;
+    	failsafe_update();
     
-    if (failsafe_is_faulted()) {
-        motor_control_stop();
-        motor_control_update();
-        return;
-    }
+    	if (failsafe_is_faulted()) {
+    		motor_control_stop();
+    		motor_control_update();
+    		return;
+    	}
 
     //edge_detector_update();
     //  opponent_tracker_update();
@@ -62,10 +60,13 @@ void robot_update(void)
 
      HAL_Delay(1000);
 
+
+
+
      motor_control_set_pwm(900, 900);
-    motor_control_update();
+     motor_control_update();
     
-    // LOG_PRINT("HI2\n");
+     LOG_PRINT("HI2\n");
     // // state_machine_update();
     
    
@@ -79,6 +80,23 @@ void robot_update(void)
     motor_control_stop();
     motor_test_done = 1U;
     LOG_PRINT("Motor test complete\r\n");
+
+    } else {
+    	edge_detector_update();
+
+    	if (edge_detector_is_edge_detected())
+     	 {
+    		motor_control_stop();
+    		LOG_PRINT("EDGE DETECTED!\r\n");
+     	 } else {
+     		motor_control_set_pwm(1950, 1950);
+     		  motor_control_update();
+     		 LOG_PRINT("EDGE NOT DETECTED!\r\n");
+     	 }
+    }
+
+
+
 }
 
 // Call as often as possible inside the infinite loop. It is for non-timing-critical background tasks.
