@@ -9,6 +9,7 @@
 #include "robot_config.h"
 #include "usart1_log.h"
 #include "game_mode_selector.h"
+#include "motor_control.h"
 #include "distance_sensor.h"
 #include "vl53l1_platform.h"
 #include "VL53L1X_api.h"
@@ -109,6 +110,7 @@ void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
     uint32_t last_wait_log_ms = HAL_GetTick();
+    uint8_t robot_was_running = 0U;
 
     LOG_PRINT("USART1 logging ready\r\n");
 
@@ -171,6 +173,12 @@ if ((now_ms - last_sensor_log_ms) >= 200U) {
 }
 
         if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+            if (robot_was_running) {
+                robot_was_running = 0U;
+                motor_control_stop();
+                LOG_PRINT("SM_Signal_Pin LOW. Motors stopped.\r\n");
+            }
+
             if ((now_ms - last_wait_log_ms) >= 1000U) {
                 last_wait_log_ms = now_ms;
                 LOG_PRINT("Waiting for SM_Signal_Pin HIGH to run robot_update()\r\n");
@@ -178,6 +186,8 @@ if ((now_ms - last_sensor_log_ms) >= 200U) {
             robot_background();
             continue;
         }
+
+        robot_was_running = 1U;
 
         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
             last_update_ms = now_ms;

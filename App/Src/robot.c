@@ -47,21 +47,36 @@ void robot_update(void)
      LOG_PRINT("HI\n");
      
 
-    motor_control_set_pwm(1700, 1300);
+
+    motor_control_set_pwm(900, 900);
     motor_control_update();
     
     // LOG_PRINT("HI2\n");
     // // state_machine_update();
     
    
+     HAL_Delay(1000);
+
+     motor_control_set_pwm(2250, 2250);
+     motor_control_update();
+
+     HAL_Delay(1000);
+
+     motor_control_set_pwm(900, 900);
+    motor_control_update();
+    
+    // LOG_PRINT("HI2\n");
+    // // state_machine_update();
+    
+   
+     HAL_Delay(1000);
+
+     motor_control_set_pwm(2250, 2250);
+     motor_control_update();
+
     // HAL_Delay(1000);
 
-    // motor_control_set_pwm(1100, 1100);
-    // motor_control_update();
-
-    // HAL_Delay(1000);
-
-    // motor_control_stop();
+    motor_control_stop();
     motor_test_done = 1U;
     LOG_PRINT("Motor test complete\r\n");
 }
