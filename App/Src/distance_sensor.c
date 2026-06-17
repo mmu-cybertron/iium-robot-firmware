@@ -11,6 +11,12 @@ extern I2C_HandleTypeDef hi2c1;
 static uint8_t is_initialized;
 opponent_status_t last_status;
 
+static uint16_t raw_left_mm     = 0U;
+static uint16_t raw_front_mm    = 0U;
+static uint16_t raw_right_mm    = 0U;
+static uint16_t raw_rear_right_mm = 0U;
+static uint16_t raw_rear_left_mm  = 0U;
+
 static VL53L0X_Dev_t rear_right_device;
 static VL53L0X_Dev_t rear_left_device;
 static VL53L0X_DEV rear_right_handle = &rear_right_device;
@@ -148,6 +154,10 @@ static uint8_t vl53l0x_init_rear_sensors(void)
 {
     uint8_t status = VL53L0X_ERROR_NONE;
 
+    HAL_GPIO_WritePin(XSHUT_4_GPIO_Port, XSHUT_4_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(XSHUT_5_GPIO_Port, XSHUT_5_Pin, GPIO_PIN_RESET);
+    HAL_Delay(20U);
+
     status |= vl53l0x_init_rear_sensor(rear_right_handle,
                                         XSHUT_4_GPIO_Port,
                                         XSHUT_4_Pin,
@@ -219,28 +229,23 @@ void distance_sensor_init(void)
 
 opponent_status_t distance_sensor_read_opponent(void)
 {
-    uint16_t left_mm = 0U;
-    uint16_t front_mm = 0U;
-    uint16_t right_mm = 0U;
-    uint16_t rear_right_mm = 0U;
-    uint16_t rear_left_mm = 0U;
     uint16_t rear_right_l1 = 0U;
-    uint16_t rear_left_l1 = 0U;
+    uint16_t rear_left_l1  = 0U;
 
     if (is_initialized == 0U) {
         return last_status;
     }
 
-    (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &rear_right_l1, &rear_left_l1);
-    rear_right_mm = vl53l0x_read_distance(rear_right_handle);
-    rear_left_mm = vl53l0x_read_distance(rear_left_handle);
+    (void)VL53L1__ReadAll(&raw_left_mm, &raw_front_mm, &raw_right_mm, &rear_right_l1, &rear_left_l1);
+    raw_rear_right_mm = vl53l0x_read_distance(rear_right_handle);
+    raw_rear_left_mm  = vl53l0x_read_distance(rear_left_handle);
 
-    last_status.left = is_valid_target(left_mm);
-    last_status.front = is_valid_target(front_mm);
-    last_status.right = is_valid_target(right_mm);
-    last_status.rear_right = is_valid_target(rear_right_mm);
-    last_status.rear_left = is_valid_target(rear_left_mm);
-    last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, rear_right_mm, rear_left_mm);
+    last_status.left       = is_valid_target(raw_left_mm);
+    last_status.front      = is_valid_target(raw_front_mm);
+    last_status.right      = is_valid_target(raw_right_mm);
+    last_status.rear_right = is_valid_target(raw_rear_right_mm);
+    last_status.rear_left  = is_valid_target(raw_rear_left_mm);
+    last_status.distance_mm = nearest_valid_distance(raw_left_mm, raw_front_mm, raw_right_mm, raw_rear_right_mm, raw_rear_left_mm);
 
     return last_status;
 }
