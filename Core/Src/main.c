@@ -176,7 +176,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -347,8 +347,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, LEFT_DIR_Pin|RIGHT_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, XSHUT_5_Pin|XSHUT_4_Pin|XSHUT_3_Pin|XSHUT_2_Pin
-                          |XSHUT_1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin|XSHUT_2_Pin|XSHUT_3_Pin|XSHUT_4_Pin
+                          |XSHUT_5_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SM_Signal_Pin */
   GPIO_InitStruct.Pin = SM_Signal_Pin;
@@ -369,10 +369,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : XSHUT_5_Pin XSHUT_4_Pin XSHUT_3_Pin XSHUT_2_Pin
-                           XSHUT_1_Pin */
-  GPIO_InitStruct.Pin = XSHUT_5_Pin|XSHUT_4_Pin|XSHUT_3_Pin|XSHUT_2_Pin
-                          |XSHUT_1_Pin;
+  /*Configure GPIO pins : XSHUT_1_Pin XSHUT_2_Pin XSHUT_3_Pin XSHUT_4_Pin
+                           XSHUT_5_Pin */
+  GPIO_InitStruct.Pin = XSHUT_1_Pin|XSHUT_2_Pin|XSHUT_3_Pin|XSHUT_4_Pin
+                          |XSHUT_5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

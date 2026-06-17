@@ -73,16 +73,16 @@ void Error_Handler(void);
 #define IR2_DO_GPIO_Port GPIOB
 #define IR1_DO_Pin GPIO_PIN_10
 #define IR1_DO_GPIO_Port GPIOB
-#define XSHUT_5_Pin GPIO_PIN_3
-#define XSHUT_5_GPIO_Port GPIOB
-#define XSHUT_4_Pin GPIO_PIN_4
-#define XSHUT_4_GPIO_Port GPIOB
+#define XSHUT_1_Pin GPIO_PIN_3
+#define XSHUT_1_GPIO_Port GPIOB
+#define XSHUT_2_Pin GPIO_PIN_4
+#define XSHUT_2_GPIO_Port GPIOB
 #define XSHUT_3_Pin GPIO_PIN_5
 #define XSHUT_3_GPIO_Port GPIOB
-#define XSHUT_2_Pin GPIO_PIN_6
-#define XSHUT_2_GPIO_Port GPIOB
-#define XSHUT_1_Pin GPIO_PIN_7
-#define XSHUT_1_GPIO_Port GPIOB
+#define XSHUT_4_Pin GPIO_PIN_6
+#define XSHUT_4_GPIO_Port GPIOB
+#define XSHUT_5_Pin GPIO_PIN_7
+#define XSHUT_5_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -9,6 +9,7 @@
 #include "robot_config.h"
 #include "usart1_log.h"
 
+
 extern uint32_t HAL_GetTick(void);
 extern UART_HandleTypeDef huart1;
 
