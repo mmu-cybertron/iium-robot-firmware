@@ -2,18 +2,12 @@
 #define INC_VL53_H_
 
 #include <stdint.h>
-//#include "logging.h"
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include <stdbool.h>
 
-// XSHUT GPIOs from CubeMX pin names.
-//#define XSHUT1 XSHUT_1_GPIO_Port, XSHUT_1_Pin
-//#define XSHUT2 XSHUT_2_GPIO_Port, XSHUT_2_Pin
-
 /*I2C Configuration Define Start*/
-#define VL53L0X_ADDR 0x29 // 7 bit address
-#define VL53L0X_ADDR_8BIT (0x29 << 1)
+#define VL53L0X_ADDR 0x29 // 7 bit address default
 
 #define VL53_I2C_TIMEOUT_MS 100
 
@@ -45,12 +39,13 @@ typedef enum{
 /* Typedef End */
 
 /* Public Function Start */
+
+// ---> NEW FUNCTION TO CHANGE TARGET ADDRESS <---
+void vl53_set_target(uint8_t address_8bit);
+
 HAL_StatusTypeDef setAddress(uint8_t new_addr, uint32_t sensor_num);
 HAL_StatusTypeDef vl53_init_multi();
 HAL_StatusTypeDef vl53_read_multi(uint16_t * distance);
-
-
-//HAL_StatusTypeDef resetSensor();
 
 HAL_StatusTypeDef init();
 void set_vl53_i2c_handler(I2C_HandleTypeDef *i2chandler);
@@ -79,17 +74,10 @@ void stopContinuous();
 uint16_t readRangeContinuousMillimeters();
 uint16_t readRangeSingleMillimeters();
 
-/* Public Function End */
-
-
-
-
 /* Private Functions Start */
 bool getSpadInfo(uint8_t * count, bool * type_is_aperture);
-
 void getSequenceStepEnables(SequenceStepEnables * enables);
 void getSequenceStepTimeouts(SequenceStepEnables const * enables, SequenceStepTimeouts * timeouts);
-
 bool performSingleRefCalibration(uint8_t vhv_init_byte);
 
 uint16_t decodeTimeout(uint16_t value);
@@ -97,11 +85,6 @@ uint16_t encodeTimeout(uint32_t timeout_mclks);
 uint32_t timeoutMclksToMicroseconds(uint16_t timeout_period_mclks, uint8_t vcsel_period_pclks);
 uint32_t timeoutMicrosecondsToMclks(uint32_t timeout_period_us, uint8_t vcsel_period_pclks);
 /* Private Functions End */
-
-/* Global Variables Start */
-
-/* Global Variables End */
-
 
 /* VLX53L0X Registers Define Start*/
 #define SYSRANGE_START                               0x00
@@ -163,7 +146,5 @@ uint32_t timeoutMicrosecondsToMclks(uint32_t timeout_period_us, uint8_t vcsel_pe
 #define ALGO_PHASECAL_LIM                            0x30
 #define ALGO_PHASECAL_CONFIG_TIMEOUT                 0x30
 #define VL53L0X_REG_SOFT_RESET_GO2_SOFT_RESET_N      0x00bf
-
-/* VLX53L0X Registers Define End*/
 
 #endif
