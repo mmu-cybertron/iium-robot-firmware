@@ -36,5 +36,6 @@ uint8_t edge_detector_is_edge_detected(void)
 //                     current_edges.rear_left ||
 //                     current_edges.rear_right);
 
-	   return (uint8_t)(current_edges.front_left);
+	   return (uint8_t)(current_edges.front_left || 
+                        current_edges.front_right);
 }

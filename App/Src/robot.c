@@ -15,10 +15,11 @@ void robot_init(void)
 	LOG_PRINT("Hello from init\n");
     motor_control_init();
     HAL_Delay(1000);
+    VESC_UART_init();
     //edge_detector_init();
-    // opponent_tracker_init();
+    //opponent_tracker_init();
     failsafe_init();
-    // state_machine_init();
+    state_machine_init();
 
     LOG_PRINT("Robot initialized\r\n");
 }
@@ -40,62 +41,57 @@ void robot_update(void)
     		return;
     	}
 
-    //edge_detector_update();
-    //  opponent_tracker_update();
-     LOG_PRINT("HI\n");
+        //edge_detector_update();
+        //opponent_tracker_update();
+        LOG_PRINT("HI\n");
      
-
-
-    motor_control_set_pwm(900, 900);
-    motor_control_update();
+        // motor_control_set_pwm(900, 900);
+        // motor_control_update();
+        
+        // LOG_PRINT("HI2\n");
+        // state_machine_update();
     
-    // LOG_PRINT("HI2\n");
-    // // state_machine_update();
+        // HAL_Delay(1000);
+
+        motor_control_set_pwm(2250, 2250);
+        // motor_control_update();
+
+        HAL_Delay(1000);
+
+        motor_control_set_pwm(900, 900);
+        // motor_control_update();
     
-   
-     HAL_Delay(1000);
-
-     motor_control_set_pwm(2250, 2250);
-     motor_control_update();
-
-     HAL_Delay(1000);
-
-
-
-
-     motor_control_set_pwm(900, 900);
-     motor_control_update();
+        // LOG_PRINT("HI2\n");
+        // state_machine_update();
     
-     LOG_PRINT("HI2\n");
-    // // state_machine_update();
-    
-   
-     HAL_Delay(1000);
+        HAL_Delay(1000);
 
-     motor_control_set_pwm(2250, 2250);
-     motor_control_update();
+        // motor_control_set_pwm(2250, 2250);
+        // motor_control_update();
 
-    // HAL_Delay(1000);
+        // HAL_Delay(1000);
 
-    motor_control_stop();
-    motor_test_done = 1U;
-    LOG_PRINT("Motor test complete\r\n");
+        motor_control_stop();
+        motor_test_done = 1U;
+        LOG_PRINT("Motor test complete\r\n");
 
     } else {
     	edge_detector_update();
 
-    	if (edge_detector_is_edge_detected())
-     	 {
-    		motor_control_stop();
-    		LOG_PRINT("EDGE DETECTED!\r\n");
-     	 } else {
-     		motor_control_set_pwm(1950, 1950);
-     		  motor_control_update();
-     		 LOG_PRINT("EDGE NOT DETECTED!\r\n");
-     	 }
+        state_machine_update();
+        
+        motor_control_update();
+    	// if (edge_detector_is_edge_detected())
+     	//  {
+    	// 	motor_control_stop();
+    	// 	LOG_PRINT("EDGE DETECTED!\r\n");
+     	//  } else {
+     	// 	motor_control_set_pwm(1950, 1950);
+     	// 	  motor_control_update();
+     	// 	 LOG_PRINT("EDGE NOT DETECTED!\r\n");
+     	//  }
+
     }
-
-
 
 }
 
