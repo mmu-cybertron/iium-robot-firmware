@@ -2,143 +2,95 @@
 #include "robot_config.h"
 #include "main.h"
 #include "usart1_log.h"
-#include "vl53.h"
-#include "vl53l1_platform.h"
-#include "VL53L1X_api.h"
+#include "failsafe.h"
+#include "edge_detector.h"
+#include "opponent_tracker.h"
+#include "motor_control.h"
+#include "state_machine.h"
+#include "motion.h"
 
-extern I2C_HandleTypeDef hi2c1;
+extern UART_HandleTypeDef huart1;
 
-#define TOF_LOG_PERIOD_MS  500U
-
-static uint8_t vl53_initialized = 0U;
-static uint8_t vl53l1_initialized = 0U;
+// Start in manual mode so the robot doesn't instantly run off the desk!
+static uint8_t is_manual_mode = 1U;
 
 void robot_init(void)
 {
-    HAL_StatusTypeDef status;
-
     LOG_PRINT("\r\n=================================\r\n");
-    LOG_PRINT("Initializing All 5 ToF Sensors...\r\n");
+    LOG_PRINT("Sumo Robot FSM Booting...\r\n");
     LOG_PRINT("=================================\r\n");
 
-    // ==============================================================
-    // 1. Initialize the 2 VL53L0X sensors (XSHUT4, XSHUT5)
-    // ==============================================================
-    set_vl53_i2c_handler(&hi2c1);
-    status = vl53_init_multi();
+    // Initialize all subsystems
+    // (opponent_tracker_init automatically initializes all 5 distance sensors!)
+    failsafe_init();
+    edge_detector_init();
+    opponent_tracker_init();
+    motor_control_init();
+    state_machine_init();
 
-    if (status != HAL_OK) {
-        LOG_PRINT("[VL53L0X] Failed to initialize\r\n");
-        vl53_initialized = 0U;
-    } else {
-        vl53_initialized = 1U;
-        LOG_PRINT("[VL53L0X] Ready\r\n");
-    }
-
-
-    // ==============================================================
-    // 2. Initialize the 3 VL53L1X sensors Manually for Robustness
-    // ==============================================================
-    LOG_PRINT("\r\n[VL53L1X] Powering down L1X sensors...\r\n");
-    HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
-    HAL_Delay(20);
-
-    uint8_t err;
-    uint8_t success_count = 0;
-
-    // --- L1X LEFT (XSHUT1) ---
-    LOG_PRINT("[VL53L1X] Waking LEFT (XSHUT1)...\r\n");
-    HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_SET);
-    HAL_Delay(20); // Safe 20ms boot time
-
-    err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_LEFT);
-    if (err) LOG_PRINT(" -> SetI2CAddress Failed! Code: %d\r\n", err);
-
-    err = VL53L1X_SensorInit(VL53L1__ADDR_LEFT);
-    if (err) LOG_PRINT(" -> SensorInit Failed! Code: %d\r\n", err);
-    else {
-        VL53L1X_SetDistanceMode(VL53L1__ADDR_LEFT, VL53L1__DISTANCE_MODE);
-        VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_LEFT, VL53L1__TIMING_BUDGET);
-        VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_LEFT, VL53L1__INTERMEASUREMENT);
-        VL53L1X_StartRanging(VL53L1__ADDR_LEFT);
-        LOG_PRINT(" -> LEFT Ready! (Addr: 0x%02X)\r\n", VL53L1__ADDR_LEFT);
-        success_count++;
-    }
-
-    // --- L1X FRONT (XSHUT2) ---
-    LOG_PRINT("[VL53L1X] Waking FRONT (XSHUT2)...\r\n");
-    HAL_GPIO_WritePin(GPIOB, XSHUT_2_Pin, GPIO_PIN_SET);
-    HAL_Delay(20);
-
-    err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_FRONT);
-    if (err) LOG_PRINT(" -> SetI2CAddress Failed! Code: %d\r\n", err);
-
-    err = VL53L1X_SensorInit(VL53L1__ADDR_FRONT);
-    if (err) LOG_PRINT(" -> SensorInit Failed! Code: %d\r\n", err);
-    else {
-        VL53L1X_SetDistanceMode(VL53L1__ADDR_FRONT, VL53L1__DISTANCE_MODE);
-        VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_FRONT, VL53L1__TIMING_BUDGET);
-        VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_FRONT, VL53L1__INTERMEASUREMENT);
-        VL53L1X_StartRanging(VL53L1__ADDR_FRONT);
-        LOG_PRINT(" -> FRONT Ready! (Addr: 0x%02X)\r\n", VL53L1__ADDR_FRONT);
-        success_count++;
-    }
-
-    // --- L1X RIGHT (XSHUT3) ---
-    LOG_PRINT("[VL53L1X] Waking RIGHT (XSHUT3)...\r\n");
-    HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_SET);
-    HAL_Delay(20);
-
-    // RIGHT sensor stays at default address 0x52
-    err = VL53L1X_SensorInit(VL53L1__ADDR);
-    if (err) LOG_PRINT(" -> SensorInit Failed! Code: %d\r\n", err);
-    else {
-        VL53L1X_SetDistanceMode(VL53L1__ADDR, VL53L1__DISTANCE_MODE);
-        VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR, VL53L1__TIMING_BUDGET);
-        VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR, VL53L1__INTERMEASUREMENT);
-        VL53L1X_StartRanging(VL53L1__ADDR);
-        LOG_PRINT(" -> RIGHT Ready! (Addr: 0x%02X)\r\n", VL53L1__ADDR);
-        success_count++;
-    }
-
-    if (success_count > 0) {
-        vl53l1_initialized = 1U;
-        LOG_PRINT("\r\n[VL53L1X] Startup Complete!\r\n");
-    } else {
-        vl53l1_initialized = 0U;
-    }
+    LOG_PRINT("\r\n[SYSTEM] Ready!\r\n");
+    LOG_PRINT(">>> STARTING IN MANUAL MODE <<<\r\n");
+    LOG_PRINT("Press 'm' to toggle AUTO FSM / MANUAL\r\n");
+    LOG_PRINT("Keys: 'w'=Fwd, 's'=Rev, 'a'=Left, 'd'=Right, ' '=Brake\r\n");
 }
 
 void robot_update(void)
 {
-    static uint32_t last_log_ms = 0U;
-    const uint32_t now_ms = HAL_GetTick();
+    // 1. Update all sensor readings
+    failsafe_update();
+    edge_detector_update();
+    opponent_tracker_update();
 
-    // The TOF_LOG_PERIOD_MS limits how fast it prints to the terminal!
-    if ((now_ms - last_log_ms) < TOF_LOG_PERIOD_MS) {
-        return;
+    // 2. Process UART for Mode Switch & Manual Override
+    uint8_t rx_char = 0;
+
+    // Timeout of 0 means this does NOT freeze the robot waiting for a key press
+    if (HAL_UART_Receive(&huart1, &rx_char, 1, 0) == HAL_OK) {
+
+        // Toggle between Manual and Autonomous
+        if (rx_char == 'm' || rx_char == 'M') {
+            is_manual_mode = !is_manual_mode;
+            LOG_PRINT("\r\n>>> MODE: %s <<<\r\n", is_manual_mode ? "MANUAL" : "AUTO FSM");
+            motor_control_stop();
+        }
+
+        // Manual Driving Controls
+        if (is_manual_mode) {
+            switch(rx_char) {
+                case 'w':
+                    motor_control_set_command(motion_forward(500));
+                    LOG_PRINT("MANUAL: Forward\r\n");
+                    break;
+                case 's':
+                    motor_control_set_command(motion_reverse(500));
+                    LOG_PRINT("MANUAL: Reverse\r\n");
+                    break;
+                case 'a':
+                    motor_control_set_command(motion_rotate_left(400));
+                    LOG_PRINT("MANUAL: Left\r\n");
+                    break;
+                case 'd':
+                    motor_control_set_command(motion_rotate_right(400));
+                    LOG_PRINT("MANUAL: Right\r\n");
+                    break;
+                case ' ':
+                    motor_control_stop();
+                    LOG_PRINT("MANUAL: Brake\r\n");
+                    break;
+            }
+        }
     }
-    last_log_ms = now_ms;
 
-    uint16_t dist_l0x[2] = {0, 0};
-    uint16_t dist_l1x_left = 0, dist_l1x_front = 0, dist_l1x_right = 0;
-    uint16_t dummy_rear_right = 0, dummy_rear_left = 0;
-
-    // Read VL53L0X (XSHUT4, XSHUT5)
-    if (vl53_initialized == 1U) {
-        vl53_read_multi(dist_l0x);
+    // 3. Run Autonomous State Machine ONLY if NOT in manual mode
+    if (!is_manual_mode) {
+        state_machine_update();
     }
 
-    // Read VL53L1X (XSHUT1, XSHUT2, XSHUT3)
-    if (vl53l1_initialized == 1U) {
-        VL53L1__ReadAll(&dist_l1x_left, &dist_l1x_front, &dist_l1x_right, &dummy_rear_right, &dummy_rear_left);
-    }
-
-    // Print all 5 distances together!
-    LOG_PRINT("L1X (1: %4u | 2: %4u | 3: %4u) mm || L0X (4: %4u | 5: %4u) mm\r\n",
-              dist_l1x_left, dist_l1x_front, dist_l1x_right, dist_l0x[0], dist_l0x[1]);
+    // 4. Send the final chosen command to the physical motors
+    motor_control_update();
 }
 
 void robot_background(void)
 {
+    // Background tasks can go here if needed later
 }
