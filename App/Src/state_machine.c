@@ -7,7 +7,6 @@
 #include "opponent_tracker.h"
 #include "robot_config.h"
 #include "usart1_log.h"
-#include "bldc_interface.h"
 
 #define EDGE_ESCAPE_DURATION_MS 1000U
 
@@ -77,39 +76,38 @@ void state_machine_update(void)
     }
 
     switch (current_state) {
-    case ROBOT_STATE_ATTACK:
-        motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
-        LOG_PRINT("Attacking\n");
-        break;
+        case ROBOT_STATE_ATTACK:
+            motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
+            LOG_PRINT("Attacking\n");
+            break;
 
-    case ROBOT_STATE_EDGE_ESCAPE:
-        //motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
-        motor_control_set_pwm(1050, 1050);
-        //bldc_interface_set_duty_cycle(0.5f)
-        LOG_PRINT("Edge detected! Escaping with PWM: %d\r\n", ROBOT_EDGE_ESCAPE_PWM);
-        break;
+        case ROBOT_STATE_EDGE_ESCAPE:
+            //motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
+            motor_control_set_pwm(1050, 1050);
+            //bldc_interface_set_duty_cycle(0.5f)
+            LOG_PRINT("Edge detected! Escaping with PWM: %d\r\n", ROBOT_EDGE_ESCAPE_PWM);
+            break;
 
-    case ROBOT_STATE_SEARCH:
-        if (opponent.left) {
-            //motor_control_set_command(motion_rotate_left(ROBOT_TRAC.K_PWM));
+        case ROBOT_STATE_SEARCH:
+            if (opponent.left) {
+                //motor_control_set_command(motion_rotate_left(ROBOT_TRAC.K_PWM));
 
-            LOG_PRINT("Opponent on the left! Rotating left\n");
-        } else if (opponent.right) {
-            //motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
+                LOG_PRINT("Opponent on the left! Rotating left\n");
+            } else if (opponent.right) {
+                //motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
 
-            LOG_PRINT("Opponent on the right! Rotating right\n");
-        } else {
-            //motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
-            //motor_control_set_pwm(2250, 2250); // 75%
-            bldc_interface_set_duty_cycle(0.2f)
+                LOG_PRINT("Opponent on the right! Rotating right\n");
+            } else {
+                //motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
+                //motor_control_set_pwm(2250, 2250); // 75%
+            }
+            break;
+        case ROBOT_STATE_RECOVER:
+        case ROBOT_STATE_FAULT:
+        default:
+            motor_control_stop();
+            break;
         }
-        break;
-    case ROBOT_STATE_RECOVER:
-    case ROBOT_STATE_FAULT:
-    default:
-        motor_control_stop();
-        bldc_interface_set_duty_cycle(0.0f)
-        break;
     // 1. Determine the Next State based on Priorities
 //    if (failsafe_is_faulted()) {
 //        current_state = ROBOT_STATE_FAULT;
@@ -177,6 +175,7 @@ void state_machine_update(void)
             motor_control_stop();
             break;
         }
+
 }
 
 robot_state_t state_machine_get_state(void)
