@@ -14,7 +14,7 @@ void opponent_tracker_init(void)
 void opponent_tracker_update(void)
 {
     current_opponent = distance_sensor_read_opponent();
-    LOG_PRINT("%f",current_opponent.front);
+//    LOG_PRINT("Front: %u\r\n", current_opponent.front);
     
 }
 
