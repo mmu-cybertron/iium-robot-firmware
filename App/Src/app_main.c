@@ -13,6 +13,8 @@
 #include "distance_sensor.h"
 #include "vl53l1_platform.h"
 #include "VL53L1X_api.h"
+//
+//#include "edge_detector.h"
 
 
 
@@ -141,6 +143,8 @@ void app_main(void)
 
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
+    //edge_detector_init();
+
 
     // /* Execute initial move before state machine starts */
     // while (!game_mode_selector_is_initial_move_done()) {
@@ -173,6 +177,19 @@ if ((now_ms - last_sensor_log_ms) >= 200U) {
               (int)tofData.rear_left,
               (unsigned int)tofData.distance_mm);
 }
+
+//		edge_detector_update();
+//
+//		 if (edge_detector_is_edge_detected())
+//		    {
+//
+//		        motor_control_stop();
+//
+//		        LOG_PRINT("EDGE DETECTED!\r\n");
+//
+//		        robot_background();
+//		        continue;
+//		    }
 
         if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
             if (robot_was_running) {

@@ -13,6 +13,13 @@ extern UART_HandleTypeDef huart1;
 
 void robot_init(void)
 {
+	LOG_PRINT("Hello from init\n");
+    motor_control_init();
+    HAL_Delay(1000);
+    VESC_UART_init();
+    //edge_detector_init();
+    //opponent_tracker_init();
+    failsafe_init();
     LOG_PRINT("\r\n=================================\r\n");
     LOG_PRINT("Sumo Robot FSM Booting...\r\n");
     LOG_PRINT("=================================\r\n");
@@ -32,50 +39,68 @@ void robot_update(void)
 {
     static uint8_t motor_test_done;
 
-    if (motor_test_done) {
-        return;
+    if (!motor_test_done) {
+        //return;
+    	failsafe_update();
+    
+    	if (failsafe_is_faulted()) {
+    		motor_control_stop();
+    		motor_control_update();
+    		return;
+    	}
+
+        //edge_detector_update();
+        //opponent_tracker_update();
+        LOG_PRINT("HI\n");
+     
+        // motor_control_set_pwm(900, 900);
+        // motor_control_update();
+        
+        // LOG_PRINT("HI2\n");
+        // state_machine_update();
+    
+        // HAL_Delay(1000);
+
+        motor_control_set_pwm(2250, 2250);
+        // motor_control_update();
+
+        HAL_Delay(1000);
+
+        motor_control_set_pwm(900, 900);
+        // motor_control_update();
+    
+        // LOG_PRINT("HI2\n");
+        // state_machine_update();
+    
+        HAL_Delay(1000);
+
+        // motor_control_set_pwm(2250, 2250);
+        // motor_control_update();
+
+        // HAL_Delay(1000);
+
+        motor_control_stop();
+        motor_test_done = 1U;
+        LOG_PRINT("Motor test complete\r\n");
+
+    } else {
+    	edge_detector_update();
+
+        state_machine_update();
+        
+        motor_control_update();
+    	// if (edge_detector_is_edge_detected())
+     	//  {
+    	// 	motor_control_stop();
+    	// 	LOG_PRINT("EDGE DETECTED!\r\n");
+     	//  } else {
+     	// 	motor_control_set_pwm(1950, 1950);
+     	// 	  motor_control_update();
+     	// 	 LOG_PRINT("EDGE NOT DETECTED!\r\n");
+     	//  }
+
     }
 
-    failsafe_update();
-    edge_detector_update();
-    opponent_tracker_update();
-
-    //edge_detector_update();
-    //  opponent_tracker_update();
-     LOG_PRINT("HI\n");
-     
-
-
-    motor_control_set_pwm(900, 900);
-    motor_control_update();
-    
-    state_machine_update();
-    
-   
-     HAL_Delay(1000);
-
-     motor_control_set_pwm(2250, 2250);
-     motor_control_update();
-
-     HAL_Delay(1000);
-
-     motor_control_set_pwm(900, 900);
-    motor_control_update();
-    
-    // LOG_PRINT("HI2\n");
-    // // state_machine_update();
-    
-   
-     HAL_Delay(1000);
-
-     motor_control_set_pwm(2250, 2250);
-     motor_control_update();
-
-    // HAL_Delay(1000);
-
-    motor_control_stop();
-    motor_test_done = 1U;
-    LOG_PRINT("Motor test complete\r\n");
 }
 
 void robot_background(void)
