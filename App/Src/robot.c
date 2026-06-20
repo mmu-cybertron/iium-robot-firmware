@@ -16,9 +16,6 @@ void robot_init(void)
 	LOG_PRINT("Hello from init\n");
     motor_control_init();
     HAL_Delay(1000);
-    VESC_UART_init();
-    //edge_detector_init();
-    //opponent_tracker_init();
     failsafe_init();
     LOG_PRINT("\r\n=================================\r\n");
     LOG_PRINT("Sumo Robot FSM Booting...\r\n");
@@ -29,7 +26,6 @@ void robot_init(void)
     failsafe_init();
     edge_detector_init();
     opponent_tracker_init();
-    motor_control_init();
     state_machine_init();
 
     LOG_PRINT("\r\n[SYSTEM] Ready!\r\n");
