@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_main.h"
+#include "usart1_log.h"
+#include "vl53.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,7 +106,8 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  app_main();
+
+    app_main();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -179,7 +182,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -380,7 +383,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LEFT_DIR_Pin|RIGHT_DIR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LEFT_DIR_Pin|RIGHT_DIR_Pin|GPIO_PIN_12, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin|XSHUT_2_Pin|XSHUT_3_Pin|XSHUT_4_Pin
@@ -392,8 +395,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SM_Signal_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEFT_DIR_Pin RIGHT_DIR_Pin */
-  GPIO_InitStruct.Pin = LEFT_DIR_Pin|RIGHT_DIR_Pin;
+  /*Configure GPIO pins : LEFT_DIR_Pin RIGHT_DIR_Pin PA12 */
+  GPIO_InitStruct.Pin = LEFT_DIR_Pin|RIGHT_DIR_Pin|GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

@@ -16,6 +16,8 @@
 //
 //#include "edge_detector.h"
 
+
+
 extern uint32_t HAL_GetTick(void);
 extern UART_HandleTypeDef huart1;
 #define SM_Signal_Pin GPIO_PIN_13
