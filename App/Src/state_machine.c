@@ -14,6 +14,8 @@ extern UART_HandleTypeDef huart2;
 
 #define EDGE_ESCAPE_DURATION_MS 1000U
 
+static uint32_t escape_start_time = 0;
+static uint8_t is_escaping = 0;
 static uint8_t run_once = 0;
 
 static robot_state_t current_state;
@@ -73,6 +75,7 @@ void state_machine_update(void)
     case ROBOT_STATE_EDGE_ESCAPE:
         //motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
     	VescUart_SetDuty(&vesc1, -0.9f);
+    	VescUart_SetDuty(&vesc2, 0.9f);
         LOG_PRINT("Edge detected! Escaping with PWM: %d\r\n", ROBOT_EDGE_ESCAPE_PWM);
         break;
 
@@ -85,7 +88,8 @@ void state_machine_update(void)
             LOG_PRINT("Opponent on the right! Rotating right\n");
         } else {
             motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
-            VescUart_SetDuty(&vesc, 0.9f);
+            VescUart_SetDuty(&vesc1, 0.9f);
+            VescUart_SetDuty(&vesc2, 0.9f);
             // LOG_PRINT("No opponent detected! Searching\n"); 
         }
         break;

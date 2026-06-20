@@ -35,7 +35,6 @@ void robot_update(void)
 {
     // static uint8_t motor_test_done;
 
-<<<<<<< Updated upstream
     if (motor_test_done) {
         return;
     }
@@ -85,8 +84,7 @@ void robot_update(void)
     motor_control_stop();
     motor_test_done = 1U;
     LOG_PRINT("Motor test complete\r\n");
-=======
-<<<<<<< Updated upstream
+
     if (!motor_test_done) {
         //return;
     	failsafe_update();
@@ -149,7 +147,6 @@ void robot_update(void)
 
     }
 
-=======
     // if (motor_test_done) {
     //     return;
     // }
@@ -199,8 +196,6 @@ void robot_update(void)
     // motor_control_stop();
     // motor_test_done = 1U;
     // LOG_PRINT("Motor test complete\r\n");
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 }
 
 // Call as often as possible inside the infinite loop. It is for non-timing-critical background tasks.
