@@ -59,11 +59,7 @@ static void debugPrintBytes(VescUart_t *vesc, uint8_t *data, int len) {
 		return;
 	}
 	char buf[8];
-<<<<<<< Updated upstream
 	for (int i = 0; i <= len; i++) {
-=======
-	for (int i = 0; i < len; i++) {
->>>>>>> Stashed changes
 		int n = snprintf(buf, sizeof(buf), "%u ", data[i]);
 		HAL_UART_Transmit(vesc->debug_huart, (uint8_t *)buf, (uint16_t)n, 100);
 	}
@@ -215,16 +211,7 @@ static int packSendPayload(VescUart_t *vesc, uint8_t *payload, int lenPay) {
 	}
 
 	if (vesc->huart != NULL) {
-<<<<<<< Updated upstream
 		HAL_UART_Transmit(vesc->huart, messageSend, (uint16_t)count, 100);
-=======
-		HAL_StatusTypeDef tx_status = HAL_UART_Transmit(vesc->huart, messageSend, (uint16_t)count, 100);
-		if (vesc->debug_huart != NULL) {
-			char statbuf[48];
-			snprintf(statbuf, sizeof(statbuf), "HAL_UART_Transmit status: %d\r\n", (int)tx_status);
-			debugPrint(vesc, statbuf);
-		}
->>>>>>> Stashed changes
 	}
 
 	return count;

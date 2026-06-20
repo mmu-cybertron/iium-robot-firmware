@@ -17,21 +17,9 @@
 #define LINE_SENSOR_EDGE_THRESHOLD 2500U
 #define OPPONENT_DETECT_DISTANCE_MM 800U
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-
 #define ROBOT_MODE_LOGGING_ENABLE 1
 #define ROBOT_MODE_RUN        2
 
-<<<<<<< Updated upstream
-#define ROBOT_ACTIVE_MODE ROBOT_MODE_LOGGING_ENABLE
-
-=======
 #define ROBOT_ACTIVE_MODE ROBOT_MODE_RUN
 
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 #endif /* ROBOT_CONFIG_H */

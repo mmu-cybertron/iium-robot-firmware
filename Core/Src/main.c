@@ -402,7 +402,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : IR4_DO_Pin IR3_DO_Pin IR2_DO_Pin IR1_DO_Pin */
   GPIO_InitStruct.Pin = IR4_DO_Pin|IR3_DO_Pin|IR2_DO_Pin|IR1_DO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : XSHUT_1_Pin XSHUT_2_Pin XSHUT_3_Pin XSHUT_4_Pin

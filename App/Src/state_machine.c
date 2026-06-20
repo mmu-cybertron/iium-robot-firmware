@@ -12,7 +12,7 @@
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-#define EDGE_ESCAPE_DURATION_MS 1000U
+#define EDGE_ESCAPE_DURATION_MS 2000U
 
 static uint32_t escape_start_time = 0;
 static uint8_t is_escaping = 0;
@@ -34,12 +34,11 @@ void state_machine_init(void)
 
 void state_machine_update(void)
 {
-    if (!run_once) {
         const opponent_status_t opponent = opponent_tracker_get_status();
 
     if (failsafe_is_faulted()) {
         current_state = ROBOT_STATE_FAULT;
-    } else if (edge_detector_is_edge_detected()) {
+    } else if (edge_detector_is_edge_detected() || is_escaping) {
     	uint32_t current_time = HAL_GetTick();
 
     	if (!is_escaping)
@@ -65,6 +64,7 @@ void state_machine_update(void)
         current_state = ROBOT_STATE_SEARCH;
     }
 
+    if (!run_once) {
     switch (current_state) {
     case ROBOT_STATE_ATTACK:
         
@@ -74,8 +74,10 @@ void state_machine_update(void)
 
     case ROBOT_STATE_EDGE_ESCAPE:
         //motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
-    	VescUart_SetDuty(&vesc1, -0.9f);
-    	VescUart_SetDuty(&vesc2, 0.9f);
+//    	VescUart_SetDuty(&vesc1, 0.0f);
+//    	VescUart_SetDuty(&vesc2, 0.0f);
+
+    	motor_control_set_pwm(1500, 1500);
         LOG_PRINT("Edge detected! Escaping with PWM: %d\r\n", ROBOT_EDGE_ESCAPE_PWM);
         break;
 
@@ -87,9 +89,11 @@ void state_machine_update(void)
             motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
             LOG_PRINT("Opponent on the right! Rotating right\n");
         } else {
-            motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
-            VescUart_SetDuty(&vesc1, 0.9f);
-            VescUart_SetDuty(&vesc2, 0.9f);
+            //motor_control_set_command(motion_rotate_left(ROBOT_SEARCH_PWM));
+//            VescUart_SetDuty(&vesc1, 1.0f);
+//            VescUart_SetDuty(&vesc2, 1.0f);
+
+            motor_control_set_pwm(2000, 2000);
             // LOG_PRINT("No opponent detected! Searching\n"); 
         }
         break;
