@@ -21,8 +21,18 @@ extern UART_HandleTypeDef huart2;
 #define SM_Signal_Pin GPIO_PIN_13
 #define SM_Signal_GPIO_Port GPIOC
 
+<<<<<<< Updated upstream
 #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
 
+=======
+<<<<<<< Updated upstream
+=======
+VescUart_t vesc;
+
+#if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
+
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 HAL_StatusTypeDef usart1_log_write(const uint8_t *data, size_t length)
 {
     if ((data == NULL) && (length > 0U)) {
@@ -114,58 +124,67 @@ int __io_getchar(void)
 
 void app_main(void)
 {
-    uint32_t last_update_ms = HAL_GetTick();
-    uint32_t last_wait_log_ms = HAL_GetTick();
-    uint8_t robot_was_running = 0U;
-
     LOG_PRINT("USART1 logging ready\r\n");
 
-    distance_sensor_init();
+    VescUart_Init(&vesc, &huart1, 100);
+    VescUart_Init(&vesc, &huart2, 100);
+    LOG_PRINT("VESC initialized with huart2\r\n");
 
-    LOG_PRINT("Distance sensors initialized and ranging started\r\n");
+     // /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
+     // LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
+     // game_mode_selector_init();
 
-    // /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
-    // LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
-    // game_mode_selector_init();
+     // while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_RESET) {
+     //     /* Mode selection update - call regularly for button debouncing */
+     //     game_mode_selector_update();
 
-    // while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_RESET) {
-    //     /* Mode selection update - call regularly for button debouncing */
-    //     game_mode_selector_update();
+     //     /* Check if mode is locked and ready */
+     //     if (game_mode_selector_is_locked()) {
+     //         LOG_PRINT("Mode locked. Waiting for SM_Signal_Pin to go HIGH to start game...\r\n");
+     //         break;
+     //     }
+     // }
 
-    //     /* Check if mode is locked and ready */
-    //     if (game_mode_selector_is_locked()) {
-    //         LOG_PRINT("Mode locked. Waiting for SM_Signal_Pin to go HIGH to start game...\r\n");
-    //         break;
-    //     }
-    // }
+     // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
+     // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
+     // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
 
-    // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
-    // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
-    // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
+     robot_init();
 
+<<<<<<< Updated upstream
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
+<<<<<<< Updated upstream
+=======
+    //edge_detector_init();
 
-    // /* Execute initial move before state machine starts */
-    // while (!game_mode_selector_is_initial_move_done()) {
-    //     game_mode_selector_execute_initial_move();
-    //     motor_control_update();
+=======
+     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
-    //     const uint32_t now_ms = HAL_GetTick();
-    //     if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
-    //         last_update_ms = now_ms;
-    //         robot_background();
-    //     }
-    // }
+     // /* Execute initial move before state machine starts */
+     // while (!game_mode_selector_is_initial_move_done()) {
+     //     game_mode_selector_execute_initial_move();
+     //     motor_control_update();
 
-    // LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+     //     const uint32_t now_ms = HAL_GetTick();
+     //     if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+     //         last_update_ms = now_ms;
+     //         robot_background();
+     //     }
+     // }
 
+     // LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+
+<<<<<<< Updated upstream
     /* Main game loop */
     while (1) {
         const uint32_t now_ms = HAL_GetTick();
         #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
             const opponent_status_t tofData = distance_sensor_read_opponent();
 
+<<<<<<< Updated upstream
             // Log all sensors periodically (every 200ms to avoid flooding UART)
             static uint32_t last_sensor_log_ms = 0U;
             if ((now_ms - last_sensor_log_ms) >= 200U) {
@@ -179,31 +198,79 @@ void app_main(void)
                         (unsigned int)tofData.distance_mm);
             }
         #endif
+=======
+// Log all sensors periodically (every 200ms to avoid flooding UART)
+static uint32_t last_sensor_log_ms = 0U;
+if ((now_ms - last_sensor_log_ms) >= 200U) {
+    last_sensor_log_ms = now_ms;
+    LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+              (int)tofData.front,
+              (int)tofData.left,
+              (int)tofData.right,
+              (int)tofData.rear_right,
+              (int)tofData.rear_left,
+              (unsigned int)tofData.distance_mm);
+}
 
-        if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
-            if (robot_was_running) {
-                robot_was_running = 0U;
-                motor_control_stop();
-                LOG_PRINT("SM_Signal_Pin LOW. Motors stopped.\r\n");
-            }
+//		edge_detector_update();
+//
+//		 if (edge_detector_is_edge_detected())
+//		    {
+//
+//		        motor_control_stop();
+//
+//		        LOG_PRINT("EDGE DETECTED!\r\n");
+//
+//		        robot_background();
+//		        continue;
+//		    }
+=======
+     /* Main game loop */
+     while (1) {
+         const uint32_t now_ms = HAL_GetTick();
+         #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
+             const opponent_status_t tofData = distance_sensor_read_opponent();
+>>>>>>> Stashed changes
 
-            if ((now_ms - last_wait_log_ms) >= 1000U) {
-                last_wait_log_ms = now_ms;
-                LOG_PRINT("Waiting for SM_Signal_Pin HIGH to run robot_update()\r\n");
-            }
-            robot_background();
-            continue;
-        }
+             // Log all sensors periodically (every 200ms to avoid flooding UART)
+             static uint32_t last_sensor_log_ms = 0U;
+             if ((now_ms - last_sensor_log_ms) >= 200U) {
+                 last_sensor_log_ms = now_ms;
+                 LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                         (int)tofData.front,
+                         (int)tofData.left,
+                         (int)tofData.right,
+                         (int)tofData.rear_right,
+                         (int)tofData.rear_left,
+                         (unsigned int)tofData.distance_mm);
+             }
+         #endif
+         
+         if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+             if (robot_was_running) {
+                 robot_was_running = 0U;
+                 motor_control_stop();
+                 LOG_PRINT("SM_Signal_Pin LOW. Motors stopped.\r\n");
+             }
+>>>>>>> Stashed changes
 
-        robot_was_running = 1U;
+             if ((now_ms - last_wait_log_ms) >= 1000U) {
+                 last_wait_log_ms = now_ms;
+                 LOG_PRINT("Waiting for SM_Signal_Pin HIGH to run robot_update()\r\n");
+             }
+             robot_background();
+             continue;
+         }
 
-        if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
-            last_update_ms = now_ms;
-            robot_update();
-        }
+         robot_was_running = 1U;
 
-        robot_background();
-    }
+         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+             last_update_ms = now_ms;
+             robot_update();
+         }
+
+         robot_background();
+     }
 
     // /* Game ended, reset for next round */
     // LOG_PRINT("SM_Signal_Pin went LOW. Round ended.\r\n");
