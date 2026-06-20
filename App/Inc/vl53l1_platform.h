@@ -43,23 +43,25 @@
  * next, if GPIO pin is connected to uC (named TOF_GPIO)
  * uncomment the corresponding define if you are
  * using polling mode via I2C, comment it
- * if XSHUT pin is connected to uC (named TOF_XSHUT)
+ * if XSHUT pin is connected to uC, use the existing XSHUT_x_Pin / XSHUT_x_GPIO_Port
+ * names already defined in main.h
  * uncomment the corresponding define
  ***************************************************/
 #define VL53L1__PORT		hi2c1	// that's the I2C port connected to VI53L1X
 #define VL53L1__ADDR		0x52	// the I2C chip address
 #define VL53L1__ADDR_LEFT   0x54   // reassigned at boot
 #define VL53L1__ADDR_FRONT  0x56   // reassigned at boot
-#define VL53L1__ADDR_REARRIGHT   0x58   //
+#define VL53L1__ADDR_REARRIGHT  0x58   //
 #define VL53L1__ADDR_REARLEFT 0x5A
 
 
 
 #define VL53L1__USING_XSHUT				// uncomment this line if XSHUT pin of VL35L1X is connected
-//#define TOF_L_XSHUT_PORT    GPIOA
-//#define TOF_L_XSHUT_PIN     GPIO_PIN_0   // LEFT sensor XSHUT
-//#define TOF_F_XSHUT_PORT    GPIOA
-//#define TOF_F_XSHUT_PIN     GPIO_PIN_1   // FRONT sensor XSHUT
+// Use the existing main.h XSHUT definitions, for example:
+//#define XSHUT_1_GPIO_Port    GPIOB
+//#define XSHUT_1_Pin          GPIO_PIN_3   // LEFT sensor XSHUT
+//#define XSHUT_2_GPIO_Port    GPIOB
+//#define XSHUT_2_Pin          GPIO_PIN_4   // FRONT sensor XSHUT
 
 //#define VL53L1__USING_GPIO			// uncomment this line if GPIO pin of VL35L1X is connected
 

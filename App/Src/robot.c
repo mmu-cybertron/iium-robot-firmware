@@ -36,55 +36,54 @@ void robot_init(void)
 
 void robot_update(void)
 {
-    // 1. Update all sensor readings
+    static uint8_t motor_test_done;
+
+    if (motor_test_done) {
+        return;
+    }
+
     failsafe_update();
     edge_detector_update();
     opponent_tracker_update();
 
-    // 2. Process UART for Mode Switch & Manual Override
-    uint8_t rx_char = 0;
+    //edge_detector_update();
+    //  opponent_tracker_update();
+     LOG_PRINT("HI\n");
+     
 
-    // Timeout of 0 means this does NOT freeze the robot waiting for a key press
-    if (HAL_UART_Receive(&huart1, &rx_char, 1, 0) == HAL_OK) {
 
-        // Toggle between Manual and Autonomous
-        if (rx_char == 'm' || rx_char == 'M') {
-            is_manual_mode = !is_manual_mode;
-            LOG_PRINT("\r\n>>> MODE: %s <<<\r\n", is_manual_mode ? "MANUAL" : "AUTO FSM");
-            motor_control_stop();
-        }
+    motor_control_set_pwm(900, 900);
+    motor_control_update();
+    
+    // LOG_PRINT("HI2\n");
+    // // state_machine_update();
+    
+   
+     HAL_Delay(1000);
 
-        // Manual Driving Controls
-        if (is_manual_mode) {
-            switch(rx_char) {
-                case 'w':
-                    motor_control_set_command(motion_forward(500));
-                    LOG_PRINT("MANUAL: Forward\r\n");
-                    break;
-                case 's':
-                    motor_control_set_command(motion_reverse(500));
-                    LOG_PRINT("MANUAL: Reverse\r\n");
-                    break;
-                case 'a':
-                    motor_control_set_command(motion_rotate_left(400));
-                    LOG_PRINT("MANUAL: Left\r\n");
-                    break;
-                case 'd':
-                    motor_control_set_command(motion_rotate_right(400));
-                    LOG_PRINT("MANUAL: Right\r\n");
-                    break;
-                case ' ':
-                    motor_control_stop();
-                    LOG_PRINT("MANUAL: Brake\r\n");
-                    break;
-            }
-        }
-    }
+     motor_control_set_pwm(2250, 2250);
+     motor_control_update();
 
-    // 3. Run Autonomous State Machine ONLY if NOT in manual mode
-    if (!is_manual_mode) {
-        state_machine_update();
-    }
+     HAL_Delay(1000);
+
+     motor_control_set_pwm(900, 900);
+    motor_control_update();
+    
+    // LOG_PRINT("HI2\n");
+    // // state_machine_update();
+    
+   
+     HAL_Delay(1000);
+
+     motor_control_set_pwm(2250, 2250);
+     motor_control_update();
+
+    // HAL_Delay(1000);
+
+    motor_control_stop();
+    motor_test_done = 1U;
+    LOG_PRINT("Motor test complete\r\n");
+}
 
     // 4. Send the final chosen command to the physical motors
     motor_control_update();

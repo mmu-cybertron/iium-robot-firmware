@@ -262,8 +262,9 @@ uint8_t status=0;
 }
 
 /*************************************************************
- * @brief  Initialize all 3 sensors using XSHUT sequencing.
- *         Assigns unique I2C addresses via address reassignment.
+ * @brief  Initialize the three VL53L1 sensors using XSHUT sequencing.
+ *         The two rear sensor channels are handled by the VL53L0X
+ *         path in the distance sensor layer.
  *
  *  Sequence:
  *   1. All XSHUT LOW  -> all off
@@ -274,7 +275,7 @@ uint8_t status=0;
 uint8_t VL53L1__InitAll(void) {
     uint8_t status = 0;
 
-    // Shut ALL sensors down first
+    // Shut the three VL53L1 sensors down first.
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_RESET);  // LEFT
     HAL_GPIO_WritePin(GPIOB, XSHUT_2_Pin, GPIO_PIN_RESET);  // FRONT
     HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_RESET);  // RIGHT
