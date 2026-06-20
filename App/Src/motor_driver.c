@@ -36,24 +36,15 @@ static int16_t clamp_pwm(int16_t pwm)
 
 static uint32_t pwm_magnitude(int16_t pwm)
 {
-    if (pwm <= MOTOR_PWM_MIN) {
-        return (uint32_t)MOTOR_PWM_MAX;
-    }
-
-    return (pwm < 0) ? (uint32_t)-pwm : (uint32_t)pwm;
+    return (uint32_t)clamp_pwm(pwm);
 }
 
 static void set_motor_pwm(TIM_HandleTypeDef *timer,
                           uint32_t channel,
-                          GPIO_TypeDef *dir_port,
-                          uint16_t dir_pin,
                           int16_t pwm)
 {
     pwm = clamp_pwm(pwm);
 
-    HAL_GPIO_WritePin(dir_port,
-                      dir_pin,
-                      (pwm < 0) ? MOTOR_REVERSE_STATE : MOTOR_FORWARD_STATE);
     __HAL_TIM_SET_COMPARE(timer, channel, pwm_magnitude(pwm));
 }
 
@@ -63,12 +54,16 @@ static void stop_pwm_outputs(void)
     __HAL_TIM_SET_COMPARE(RIGHT_MOTOR_PWM_TIMER, RIGHT_MOTOR_PWM_CHANNEL, 0U);
 }
 
+static void set_neutral_pwm(void)
+{
+    __HAL_TIM_SET_COMPARE(LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL, MOTOR_PWM_NEUTRAL);
+    __HAL_TIM_SET_COMPARE(RIGHT_MOTOR_PWM_TIMER, RIGHT_MOTOR_PWM_CHANNEL, MOTOR_PWM_NEUTRAL);
+}
+
 void motor_driver_init(void)
 {
     is_initialized = 0U;
     stop_pwm_outputs();
-    HAL_GPIO_WritePin(LEFT_MOTOR_DIR_PORT, LEFT_MOTOR_DIR_PIN, MOTOR_FORWARD_STATE);
-    HAL_GPIO_WritePin(RIGHT_MOTOR_DIR_PORT, RIGHT_MOTOR_DIR_PIN, MOTOR_FORWARD_STATE);
 
     if (HAL_TIM_PWM_Start(LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL) != HAL_OK) {
         return;
@@ -79,6 +74,8 @@ void motor_driver_init(void)
         return;
     }
 
+    set_neutral_pwm();
+    
     is_initialized = 1U;
 }
 
@@ -90,13 +87,9 @@ void motor_driver_set_pwm(int16_t left_pwm, int16_t right_pwm)
 
     set_motor_pwm(LEFT_MOTOR_PWM_TIMER,
                   LEFT_MOTOR_PWM_CHANNEL,
-                  LEFT_MOTOR_DIR_PORT,
-                  LEFT_MOTOR_DIR_PIN,
                   left_pwm);
     set_motor_pwm(RIGHT_MOTOR_PWM_TIMER,
                   RIGHT_MOTOR_PWM_CHANNEL,
-                  RIGHT_MOTOR_DIR_PORT,
-                  RIGHT_MOTOR_DIR_PIN,
                   right_pwm);
 }
 
@@ -106,5 +99,7 @@ void motor_driver_brake(void)
         return;
     }
 
-    stop_pwm_outputs();
+    __HAL_TIM_SET_COMPARE(LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL, MOTOR_PWM_NEUTRAL);
+    __HAL_TIM_SET_COMPARE(RIGHT_MOTOR_PWM_TIMER, RIGHT_MOTOR_PWM_CHANNEL, MOTOR_PWM_NEUTRAL);
+
 }

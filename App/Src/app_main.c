@@ -8,10 +8,18 @@
 #include "robot.h"
 #include "robot_config.h"
 #include "usart1_log.h"
+#include "game_mode_selector.h"
+#include "motor_control.h"
+#include "distance_sensor.h"
+#include "vl53l1_platform.h"
+#include "VL53L1X_api.h"
+
 
 
 extern uint32_t HAL_GetTick(void);
 extern UART_HandleTypeDef huart1;
+#define SM_Signal_Pin GPIO_PIN_13
+#define SM_Signal_GPIO_Port GPIOC
 
 HAL_StatusTypeDef usart1_log_write(const uint8_t *data, size_t length)
 {
@@ -103,12 +111,85 @@ int __io_getchar(void)
 void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
+    uint32_t last_wait_log_ms = HAL_GetTick();
+    uint8_t robot_was_running = 0U;
+
+    LOG_PRINT("USART1 logging ready\r\n");
+
+    distance_sensor_init();
+
+    LOG_PRINT("Distance sensors initialized and ranging started\r\n");
+
+    // /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
+    // LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
+    // game_mode_selector_init();
+
+    // while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_RESET) {
+    //     /* Mode selection update - call regularly for button debouncing */
+    //     game_mode_selector_update();
+
+    //     /* Check if mode is locked and ready */
+    //     if (game_mode_selector_is_locked()) {
+    //         LOG_PRINT("Mode locked. Waiting for SM_Signal_Pin to go HIGH to start game...\r\n");
+    //         break;
+    //     }
+    // }
+
+    // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
+    // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
+    // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
 
     robot_init();
-    LOG_PRINT("USART1 logging ready, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
+    LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
 
+    // /* Execute initial move before state machine starts */
+    // while (!game_mode_selector_is_initial_move_done()) {
+    //     game_mode_selector_execute_initial_move();
+    //     motor_control_update();
+
+    //     const uint32_t now_ms = HAL_GetTick();
+    //     if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+    //         last_update_ms = now_ms;
+    //         robot_background();
+    //     }
+    // }
+
+    // LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+
+    /* Main game loop */
     while (1) {
         const uint32_t now_ms = HAL_GetTick();
+        const opponent_status_t tofData = distance_sensor_read_opponent();
+
+// Log all sensors periodically (every 200ms to avoid flooding UART)
+static uint32_t last_sensor_log_ms = 0U;
+if ((now_ms - last_sensor_log_ms) >= 200U) {
+    last_sensor_log_ms = now_ms;
+    LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+              (int)tofData.front,
+              (int)tofData.left,
+              (int)tofData.right,
+              (int)tofData.rear_right,
+              (int)tofData.rear_left,
+              (unsigned int)tofData.distance_mm);
+}
+
+        if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+            if (robot_was_running) {
+                robot_was_running = 0U;
+                motor_control_stop();
+                LOG_PRINT("SM_Signal_Pin LOW. Motors stopped.\r\n");
+            }
+
+            if ((now_ms - last_wait_log_ms) >= 1000U) {
+                last_wait_log_ms = now_ms;
+                LOG_PRINT("Waiting for SM_Signal_Pin HIGH to run robot_update()\r\n");
+            }
+            robot_background();
+            continue;
+        }
+
+        robot_was_running = 1U;
 
         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
             last_update_ms = now_ms;
@@ -117,4 +198,12 @@ void app_main(void)
 
         robot_background();
     }
+
+    // /* Game ended, reset for next round */
+    // LOG_PRINT("SM_Signal_Pin went LOW. Round ended.\r\n");
+    // game_mode_selector_reset_for_new_round();
+    // motor_control_stop();
+    
+    // /* Loop back to mode selection for next round */
+    // app_main();
 }
