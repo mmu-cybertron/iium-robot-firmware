@@ -9,6 +9,7 @@
 #include "opponent_tracker.h"
 #include "state_machine.h"
 #include "usart1_log.h"
+#include "vesc/vescuart.h"
 
 void robot_init(void)
 {

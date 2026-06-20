@@ -13,11 +13,15 @@
 #include "distance_sensor.h"
 #include "vl53l1_platform.h"
 #include "VL53L1X_api.h"
+#include "vesc/vescuart.h"
 
 extern uint32_t HAL_GetTick(void);
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 #define SM_Signal_Pin GPIO_PIN_13
 #define SM_Signal_GPIO_Port GPIOC
+
+#if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
 
 HAL_StatusTypeDef usart1_log_write(const uint8_t *data, size_t length)
 {
@@ -106,6 +110,8 @@ int __io_getchar(void)
     return (int)data;
 }
 
+#endif /* ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE */
+
 void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
@@ -157,20 +163,22 @@ void app_main(void)
     /* Main game loop */
     while (1) {
         const uint32_t now_ms = HAL_GetTick();
-        const opponent_status_t tofData = distance_sensor_read_opponent();
+        #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
+            const opponent_status_t tofData = distance_sensor_read_opponent();
 
-// Log all sensors periodically (every 200ms to avoid flooding UART)
-static uint32_t last_sensor_log_ms = 0U;
-if ((now_ms - last_sensor_log_ms) >= 200U) {
-    last_sensor_log_ms = now_ms;
-    LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
-              (int)tofData.front,
-              (int)tofData.left,
-              (int)tofData.right,
-              (int)tofData.rear_right,
-              (int)tofData.rear_left,
-              (unsigned int)tofData.distance_mm);
-}
+            // Log all sensors periodically (every 200ms to avoid flooding UART)
+            static uint32_t last_sensor_log_ms = 0U;
+            if ((now_ms - last_sensor_log_ms) >= 200U) {
+                last_sensor_log_ms = now_ms;
+                LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                        (int)tofData.front,
+                        (int)tofData.left,
+                        (int)tofData.right,
+                        (int)tofData.rear_right,
+                        (int)tofData.rear_left,
+                        (unsigned int)tofData.distance_mm);
+            }
+        #endif
 
         if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
             if (robot_was_running) {
