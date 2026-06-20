@@ -11,9 +11,6 @@
 
 extern UART_HandleTypeDef huart1;
 
-// Start in manual mode so the robot doesn't instantly run off the desk!
-static uint8_t is_manual_mode = 1U;
-
 void robot_init(void)
 {
     LOG_PRINT("\r\n=================================\r\n");
@@ -29,9 +26,6 @@ void robot_init(void)
     state_machine_init();
 
     LOG_PRINT("\r\n[SYSTEM] Ready!\r\n");
-    LOG_PRINT(">>> STARTING IN MANUAL MODE <<<\r\n");
-    LOG_PRINT("Press 'm' to toggle AUTO FSM / MANUAL\r\n");
-    LOG_PRINT("Keys: 'w'=Fwd, 's'=Rev, 'a'=Left, 'd'=Right, ' '=Brake\r\n");
 }
 
 void robot_update(void)
@@ -55,8 +49,7 @@ void robot_update(void)
     motor_control_set_pwm(900, 900);
     motor_control_update();
     
-    // LOG_PRINT("HI2\n");
-    // // state_machine_update();
+    state_machine_update();
     
    
      HAL_Delay(1000);
@@ -83,10 +76,6 @@ void robot_update(void)
     motor_control_stop();
     motor_test_done = 1U;
     LOG_PRINT("Motor test complete\r\n");
-}
-
-    // 4. Send the final chosen command to the physical motors
-    motor_control_update();
 }
 
 void robot_background(void)
