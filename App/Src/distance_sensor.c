@@ -2,6 +2,8 @@
 #include "robot_config.h"
 #include "vl53l1_platform.h"
 #include "VL53L1X_api.h"
+#include "vl53l0x_platform.h"
+#include "vl53l0x_api.h"
 #include "vl53.h"
 #include "usart1_log.h"
 #include "main.h"
