@@ -27,9 +27,6 @@ void robot_init(void)
     LOG_PRINT("Robot initialized\r\n");
 }
 
-    LOG_PRINT("\r\n[SYSTEM] Ready!\r\n");
-}
-
 void robot_update(void)
 {
     static uint8_t motor_test_done;
@@ -60,8 +57,6 @@ void robot_update(void)
 
         // motor_control_update();
     }
-}
-
 }
 
 void robot_background(void)
