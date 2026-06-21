@@ -303,6 +303,28 @@ uint8_t VL53L1__InitAll(void) {
     status |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_FRONT, VL53L1__TIMING_BUDGET);
     status |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_FRONT, VL53L1__INTERMEASUREMENT);
 
+//    /* REAR RIGHT: 0x52 -> 0x58 */
+//    HAL_GPIO_WritePin(GPIOB, XSHUT_4_Pin, GPIO_PIN_SET);
+//    HAL_Delay(5);
+//    status |= VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_REARRIGHT);
+//    status |= VL53L1X_SensorInit(VL53L1__ADDR_REARRIGHT);
+//    status |= VL53L1X_SetOffset(VL53L1__ADDR_REARRIGHT, VL53L1__CALIB_OFFSET_REARRIGHT);
+//    status |= VL53L1X_SetXtalk(VL53L1__ADDR_REARRIGHT, VL53L1__CALIB_XTALK_REARRIGHT);
+//    status |= VL53L1X_SetDistanceMode(VL53L1__ADDR_REARRIGHT, VL53L1__DISTANCE_MODE);
+//    status |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_REARRIGHT, VL53L1__TIMING_BUDGET);
+//    status |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_REARRIGHT, VL53L1__INTERMEASUREMENT);
+//
+//    /* REAR LEFT: 0x52 -> 0x5A */
+//    HAL_GPIO_WritePin(GPIOB, XSHUT_5_Pin, GPIO_PIN_SET);
+//    HAL_Delay(5);
+//    status |= VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_REARLEFT);
+//    status |= VL53L1X_SensorInit(VL53L1__ADDR_REARLEFT);
+//    status |= VL53L1X_SetOffset(VL53L1__ADDR_REARLEFT, VL53L1__CALIB_OFFSET_REARLEFT);
+//    status |= VL53L1X_SetXtalk(VL53L1__ADDR_REARLEFT, VL53L1__CALIB_XTALK_REARLEFT);
+//    status |= VL53L1X_SetDistanceMode(VL53L1__ADDR_REARLEFT, VL53L1__DISTANCE_MODE);
+//    status |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_REARLEFT, VL53L1__TIMING_BUDGET);
+//    status |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_REARLEFT, VL53L1__INTERMEASUREMENT);
+
     /* RIGHT: stays at 0x52 — bring up last */
     HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_SET);
     HAL_Delay(5);
@@ -349,16 +371,9 @@ uint8_t VL53L1__InitAll(void) {
     *left  = VL53L1__ReadOne(VL53L1__ADDR_LEFT);
     *front = VL53L1__ReadOne(VL53L1__ADDR_FRONT);
     *right = VL53L1__ReadOne(VL53L1__ADDR);
-
-    /* The two rear channels are handled by the VL53L0X path in the
-       distance sensor layer, so keep the L1 readout limited to the
-       three existing VL53L1 sensors. */
-    if (rearright != NULL) {
-        *rearright = 0U;
-    }
-    if (rearleft != NULL) {
-        *rearleft = 0U;
-    }
-
+//    *rearright   = VL53L1__ReadOne(VL53L1__ADDR_REARRIGHT);    // NEW
+//    *rearleft = VL53L1__ReadOne(VL53L1__ADDR_REARLEFT);
+    //
+    //
     return 0;
 }
