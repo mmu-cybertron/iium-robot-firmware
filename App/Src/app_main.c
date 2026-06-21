@@ -116,6 +116,7 @@ void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
     uint32_t last_wait_log_ms = HAL_GetTick();
+    uint32_t last_tof_led_update_ms = HAL_GetTick();
     uint8_t robot_was_running = 0U;
 
     LOG_PRINT("USART1 logging ready\r\n");
@@ -142,7 +143,7 @@ void app_main(void)
     // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
     // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
     // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
-
+    HAL_GPIO_WritePin(LED_D8_GPIO_Port,LED_D8_Pin, GPIO_PIN_RESET);
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
 
@@ -163,6 +164,7 @@ void app_main(void)
     /* Main game loop */
     while (1) {
         const uint32_t now_ms = HAL_GetTick();
+
         #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
             const opponent_status_t tofData = distance_sensor_read_opponent();
 
@@ -181,6 +183,13 @@ void app_main(void)
         #endif
 
         if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+            #if ROBOT_ACTIVE_MODE != ROBOT_MODE_LOGGING_ENABLE
+            if ((now_ms - last_tof_led_update_ms) >= 100U) {
+                last_tof_led_update_ms = now_ms;
+                (void)distance_sensor_read_opponent();
+            }
+            #endif
+
             if (robot_was_running) {
                 robot_was_running = 0U;
                 motor_control_stop();

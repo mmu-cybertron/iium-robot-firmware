@@ -8,9 +8,12 @@
 
 extern I2C_HandleTypeDef hi2c1;
 
+#define DISTANCE_SENSOR_ENABLE_REAR_VL53L0X 0
+
 static uint8_t is_initialized;
 opponent_status_t last_status;
 
+#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
 static VL53L0X_Dev_t rear_right_device;
 static VL53L0X_Dev_t rear_left_device;
 static VL53L0X_DEV rear_right_handle = &rear_right_device;
@@ -159,11 +162,25 @@ static uint8_t vl53l0x_init_rear_sensors(void)
 
     return status;
 }
+#endif
 
 static uint8_t is_valid_target(uint16_t distance_mm)
 {
     return (uint8_t)((distance_mm > 0U) &&
                      (distance_mm <= OPPONENT_DETECT_DISTANCE_MM));
+}
+
+static void distance_sensor_update_debug_leds(const opponent_status_t *status)
+{
+    HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+                      LED_D6_Pin,
+                      status->left ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+                      LED_D7_Pin,
+                      status->front ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+                      LED_D8_Pin,
+                      status->right ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 static uint16_t nearest_valid_distance(uint16_t left_mm,
@@ -205,12 +222,16 @@ void distance_sensor_init(void)
     last_status.rear_right      = 0U;   // NEW
     last_status.rear_left = 0U;   // NEW
     last_status.distance_mm = 0U;
+    distance_sensor_update_debug_leds(&last_status);
 
     status = VL53L1__InitAll();
     status |= VL53L1X_StartRanging(VL53L1__ADDR_LEFT);
     status |= VL53L1X_StartRanging(VL53L1__ADDR_FRONT);
     status |= VL53L1X_StartRanging(VL53L1__ADDR);
+#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
     status |= vl53l0x_init_rear_sensors();
+#endif
+    /* Rear VL53L0X sensors are disabled for the current 3x VL53L1X setup. */
 
     if (status == 0U) {
         is_initialized = 1U;
@@ -228,12 +249,18 @@ opponent_status_t distance_sensor_read_opponent(void)
     uint16_t rear_left_l1 = 0U;
 
     if (is_initialized == 0U) {
+        distance_sensor_update_debug_leds(&last_status);
         return last_status;
     }
 
     (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &rear_right_l1, &rear_left_l1);
+#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
     rear_right_mm = vl53l0x_read_distance(rear_right_handle);
     rear_left_mm = vl53l0x_read_distance(rear_left_handle);
+#else
+    rear_right_mm = 0U;
+    rear_left_mm = 0U;
+#endif
 
     last_status.left = is_valid_target(left_mm);
     last_status.front = is_valid_target(front_mm);
@@ -241,6 +268,7 @@ opponent_status_t distance_sensor_read_opponent(void)
     last_status.rear_right = is_valid_target(rear_right_mm);
     last_status.rear_left = is_valid_target(rear_left_mm);
     last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, rear_right_mm, rear_left_mm);
+    distance_sensor_update_debug_leds(&last_status);
 
     return last_status;
 }
