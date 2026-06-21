@@ -1,10 +1,12 @@
 #include "distance_sensor.h"
-
-#include "main.h"
 #include "robot_config.h"
 #include "vl53l1_platform.h"
 #include "VL53L1X_api.h"
+#include "vl53l0x_platform.h"
 #include "vl53l0x_api.h"
+#include "vl53.h"
+#include "usart1_log.h"
+#include "main.h"
 
 extern I2C_HandleTypeDef hi2c1;
 
@@ -213,14 +215,14 @@ static uint16_t nearest_valid_distance(uint16_t left_mm,
 
 void distance_sensor_init(void)
 {
-    uint8_t status;
-
+    uint8_t success_count = 0;
     is_initialized = 0U;
+
     last_status.front = 0U;
     last_status.left = 0U;
     last_status.right = 0U;
-    last_status.rear_right      = 0U;   // NEW
-    last_status.rear_left = 0U;   // NEW
+    last_status.rear_right = 0U;
+    last_status.rear_left = 0U;
     last_status.distance_mm = 0U;
     distance_sensor_update_debug_leds(&last_status);
 
@@ -233,20 +235,61 @@ void distance_sensor_init(void)
 #endif
     /* Rear VL53L0X sensors are disabled for the current 3x VL53L1X setup. */
 
-    if (status == 0U) {
+    // 2. Initialize VL53L1X (XSHUT1, XSHUT2, XSHUT3) safely
+    HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
+    HAL_Delay(20);
+
+    uint8_t err;
+
+    // LEFT
+    HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_SET);
+    HAL_Delay(20);
+    err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_LEFT);
+    err |= VL53L1X_SensorInit(VL53L1__ADDR_LEFT);
+    if (err == 0) {
+        VL53L1X_SetDistanceMode(VL53L1__ADDR_LEFT, VL53L1__DISTANCE_MODE);
+        VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_LEFT, VL53L1__TIMING_BUDGET);
+        VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_LEFT, VL53L1__INTERMEASUREMENT);
+        VL53L1X_StartRanging(VL53L1__ADDR_LEFT);
+        success_count++;
+    }
+
+    // FRONT
+    HAL_GPIO_WritePin(GPIOB, XSHUT_2_Pin, GPIO_PIN_SET);
+    HAL_Delay(20);
+    err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_FRONT);
+    err |= VL53L1X_SensorInit(VL53L1__ADDR_FRONT);
+    if (err == 0) {
+        VL53L1X_SetDistanceMode(VL53L1__ADDR_FRONT, VL53L1__DISTANCE_MODE);
+        VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_FRONT, VL53L1__TIMING_BUDGET);
+        VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_FRONT, VL53L1__INTERMEASUREMENT);
+        VL53L1X_StartRanging(VL53L1__ADDR_FRONT);
+        success_count++;
+    }
+
+    // RIGHT
+    HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_SET);
+    HAL_Delay(20);
+    err = VL53L1X_SensorInit(VL53L1__ADDR);
+    if (err == 0) {
+        VL53L1X_SetDistanceMode(VL53L1__ADDR, VL53L1__DISTANCE_MODE);
+        VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR, VL53L1__TIMING_BUDGET);
+        VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR, VL53L1__INTERMEASUREMENT);
+        VL53L1X_StartRanging(VL53L1__ADDR);
+        success_count++;
+    }
+
+    if (success_count > 0) {
         is_initialized = 1U;
+        LOG_PRINT("[Sensors] Active and Ready!\r\n");
     }
 }
 
 opponent_status_t distance_sensor_read_opponent(void)
 {
-    uint16_t left_mm = 0U;
-    uint16_t front_mm = 0U;
-    uint16_t right_mm = 0U;
-    uint16_t rear_right_mm = 0U;
-    uint16_t rear_left_mm = 0U;
-    uint16_t rear_right_l1 = 0U;
-    uint16_t rear_left_l1 = 0U;
+    uint16_t left_mm = 8191U, front_mm = 8191U, right_mm = 8191U;
+    uint16_t rear_right_mm = 8191U, rear_left_mm = 8191U;
+    uint16_t dummy = 0U;
 
     if (is_initialized == 0U) {
         distance_sensor_update_debug_leds(&last_status);

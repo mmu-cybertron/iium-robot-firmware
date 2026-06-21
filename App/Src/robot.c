@@ -1,12 +1,11 @@
 #include "robot.h"
 #include "robot_config.h"
 #include "main.h"
-
-#include "motion.h"
-#include "edge_detector.h"
+#include "usart1_log.h"
 #include "failsafe.h"
-#include "motor_control.h"
+#include "edge_detector.h"
 #include "opponent_tracker.h"
+#include "motor_control.h"
 #include "state_machine.h"
 #include "usart1_log.h"
 #include "vesc/vescuart.h"
@@ -25,8 +24,8 @@ void robot_init(void)
     LOG_PRINT("Robot initialized\r\n");
 }
 
-// Where the robot reads sensors, decides behavior, and updates motor PWM.
-// Examples: read sensors, update edge detection, update opponent detection, choose movement, update motors
+    LOG_PRINT("\r\n[SYSTEM] Ready!\r\n");
+}
 
 void robot_update(void)
 {
@@ -160,11 +159,10 @@ void robot_update(void)
 
 }
 
-// Call as often as possible inside the infinite loop. It is for non-timing-critical background tasks.
-// Examples: checking communication, debug LED blinking, low-priority monitoring, background failsafe work, telemetry later
+}
 
 void robot_background(void)
 {
-    failsafe_background();
+    // Background tasks can go here if needed later
 }
 

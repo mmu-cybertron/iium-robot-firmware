@@ -23,7 +23,26 @@ static uint8_t is_escaping = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
 
+#define EDGE_ESCAPE_DURATION_MS 1000U
+
 static robot_state_t current_state;
+static uint32_t escape_start_time = 0;
+static uint8_t is_escaping = 0;
+
+//temp debugger
+static uint8_t run_once = 0;
+static robot_state_t previous_state = ROBOT_STATE_FAULT; // Used to track state changes
+
+static const char* state_names[] = {
+		    [ROBOT_STATE_IDLE]        = "IDLE",
+		    [ROBOT_STATE_SEARCH]      = "SEARCH",
+			[ROBOT_STATE_TRACK_LEFT]  = "TRACK_L",
+			[ROBOT_STATE_TRACK_RIGHT] = "TRACK_R",
+		    [ROBOT_STATE_ATTACK]      = "ATTACK",
+		    [ROBOT_STATE_EDGE_ESCAPE] = "EDGE_ESCAPE",
+		    [ROBOT_STATE_RECOVER]     = "RECOVER",
+		    [ROBOT_STATE_FAULT]       = "FAULT"};
+
 
 VescUart_t vesc1;
 VescUart_t vesc2;
@@ -91,7 +110,10 @@ void state_machine_init(void)
 
     vesc_stop_all();
     current_state = ROBOT_STATE_IDLE;
+    is_escaping = 0;
     motor_control_stop();
+
+    run_once = 0;
 }
 
 void state_machine_update(void)
@@ -144,13 +166,16 @@ void state_machine_update(void)
             // VescUart_SetCurrent(&vesc2, -10.0f);
             motor_control_set_pwm(900, 900);
             motor_control_update();
-            HAL_Delay(1000);
+            HAL_Delay(300);
+            motor_control_set_pwm(900, 2250);
+            motor_control_update();
+            HAL_Delay(200);
             is_escaping = 0;
             current_state = ROBOT_STATE_IDLE;
             vesc_stop_all();
             LOG_PRINT("Edge escape complete. VESC current stopped.\r\n");
 
-            run_once = 1;
+            // run_once = 1;
         }
         // } else if (vesc_check_overcurrent_fault()) {
         // vesc_fault_latched = 1U;
@@ -231,3 +256,4 @@ robot_state_t state_machine_get_state(void)
 {
     return current_state;
 }
+ 
