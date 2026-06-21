@@ -226,15 +226,6 @@ void distance_sensor_init(void)
     last_status.distance_mm = 0U;
     distance_sensor_update_debug_leds(&last_status);
 
-    status = VL53L1__InitAll();
-    status |= VL53L1X_StartRanging(VL53L1__ADDR_LEFT);
-    status |= VL53L1X_StartRanging(VL53L1__ADDR_FRONT);
-    status |= VL53L1X_StartRanging(VL53L1__ADDR);
-#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
-    status |= vl53l0x_init_rear_sensors();
-#endif
-    /* Rear VL53L0X sensors are disabled for the current 3x VL53L1X setup. */
-
     // 2. Initialize VL53L1X (XSHUT1, XSHUT2, XSHUT3) safely
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
     HAL_Delay(20);
@@ -296,7 +287,7 @@ opponent_status_t distance_sensor_read_opponent(void)
         return last_status;
     }
 
-    (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &rear_right_l1, &rear_left_l1);
+    (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
 #if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
     rear_right_mm = vl53l0x_read_distance(rear_right_handle);
     rear_left_mm = vl53l0x_read_distance(rear_left_handle);

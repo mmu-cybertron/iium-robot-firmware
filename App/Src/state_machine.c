@@ -23,26 +23,7 @@ static uint8_t is_escaping = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
 
-#define EDGE_ESCAPE_DURATION_MS 1000U
-
 static robot_state_t current_state;
-static uint32_t escape_start_time = 0;
-static uint8_t is_escaping = 0;
-
-//temp debugger
-static uint8_t run_once = 0;
-static robot_state_t previous_state = ROBOT_STATE_FAULT; // Used to track state changes
-
-static const char* state_names[] = {
-		    [ROBOT_STATE_IDLE]        = "IDLE",
-		    [ROBOT_STATE_SEARCH]      = "SEARCH",
-			[ROBOT_STATE_TRACK_LEFT]  = "TRACK_L",
-			[ROBOT_STATE_TRACK_RIGHT] = "TRACK_R",
-		    [ROBOT_STATE_ATTACK]      = "ATTACK",
-		    [ROBOT_STATE_EDGE_ESCAPE] = "EDGE_ESCAPE",
-		    [ROBOT_STATE_RECOVER]     = "RECOVER",
-		    [ROBOT_STATE_FAULT]       = "FAULT"};
-
 
 VescUart_t vesc1;
 VescUart_t vesc2;
