@@ -144,13 +144,16 @@ void state_machine_update(void)
             // VescUart_SetCurrent(&vesc2, -10.0f);
             motor_control_set_pwm(900, 900);
             motor_control_update();
-            HAL_Delay(1000);
+            HAL_Delay(300);
+            motor_control_set_pwm(900, 2250);
+            motor_control_update();
+            HAL_Delay(200);
             is_escaping = 0;
             current_state = ROBOT_STATE_IDLE;
             vesc_stop_all();
             LOG_PRINT("Edge escape complete. VESC current stopped.\r\n");
 
-            run_once = 1;
+            // run_once = 1;
         }
         // } else if (vesc_check_overcurrent_fault()) {
         // vesc_fault_latched = 1U;
