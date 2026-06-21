@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "robot_config.h"
 #include "stm32f4xx_hal.h"
 
 #ifdef __cplusplus
@@ -24,8 +25,13 @@ HAL_StatusTypeDef usart1_log_write_string(const char *text);
 HAL_StatusTypeDef usart1_log_write_line(const char *text);
 int usart1_log_printf(const char *format, ...);
 
+#if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
 #define LOG_PRINT(...) usart1_log_printf(__VA_ARGS__)
 #define LOG_LINE(text) usart1_log_write_line(text)
+#else
+#define LOG_PRINT(...) do { } while (0)
+#define LOG_LINE(text) do { } while (0)
+#endif
 
 #ifdef __cplusplus
 }

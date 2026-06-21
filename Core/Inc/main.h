@@ -73,6 +73,12 @@ void Error_Handler(void);
 #define IR2_DO_GPIO_Port GPIOB
 #define IR1_DO_Pin GPIO_PIN_10
 #define IR1_DO_GPIO_Port GPIOB
+#define LED_D6_Pin GPIO_PIN_14
+#define LED_D6_GPIO_Port GPIOB
+#define LED_D7_Pin GPIO_PIN_15
+#define LED_D7_GPIO_Port GPIOB
+#define LED_D8_Pin GPIO_PIN_8
+#define LED_D8_GPIO_Port GPIOA
 #define XSHUT_1_Pin GPIO_PIN_3
 #define XSHUT_1_GPIO_Port GPIOB
 #define XSHUT_2_Pin GPIO_PIN_4

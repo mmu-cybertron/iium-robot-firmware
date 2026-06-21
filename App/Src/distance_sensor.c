@@ -9,9 +9,13 @@
 #include "main.h"
 
 extern I2C_HandleTypeDef hi2c1;
+
+#define DISTANCE_SENSOR_ENABLE_REAR_VL53L0X 0
+
 static uint8_t is_initialized;
 opponent_status_t last_status;
 
+#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
 static VL53L0X_Dev_t rear_right_device;
 static VL53L0X_Dev_t rear_left_device;
 static VL53L0X_DEV rear_right_handle = &rear_right_device;
@@ -160,11 +164,25 @@ static uint8_t vl53l0x_init_rear_sensors(void)
 
     return status;
 }
+#endif
 
 static uint8_t is_valid_target(uint16_t distance_mm)
 {
     return (uint8_t)((distance_mm > 0U) &&
                      (distance_mm <= OPPONENT_DETECT_DISTANCE_MM));
+}
+
+static void distance_sensor_update_debug_leds(const opponent_status_t *status)
+{
+    HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+                      LED_D6_Pin,
+                      status->left ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+                      LED_D7_Pin,
+                      status->front ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+                      LED_D8_Pin,
+                      status->right ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 static uint16_t nearest_valid_distance(uint16_t left_mm,
@@ -206,14 +224,16 @@ void distance_sensor_init(void)
     last_status.rear_right = 0U;
     last_status.rear_left = 0U;
     last_status.distance_mm = 0U;
+    distance_sensor_update_debug_leds(&last_status);
 
-    LOG_PRINT("\r\n--- Initializing Distance Sensors ---\r\n");
-
-    // 1. Initialize VL53L0X (XSHUT4, XSHUT5)
-    set_vl53_i2c_handler(&hi2c1);
-    if (vl53_init_multi() == HAL_OK) {
-        success_count++;
-    }
+    status = VL53L1__InitAll();
+    status |= VL53L1X_StartRanging(VL53L1__ADDR_LEFT);
+    status |= VL53L1X_StartRanging(VL53L1__ADDR_FRONT);
+    status |= VL53L1X_StartRanging(VL53L1__ADDR);
+#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
+    status |= vl53l0x_init_rear_sensors();
+#endif
+    /* Rear VL53L0X sensors are disabled for the current 3x VL53L1X setup. */
 
     // 2. Initialize VL53L1X (XSHUT1, XSHUT2, XSHUT3) safely
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
@@ -272,17 +292,18 @@ opponent_status_t distance_sensor_read_opponent(void)
     uint16_t dummy = 0U;
 
     if (is_initialized == 0U) {
+        distance_sensor_update_debug_leds(&last_status);
         return last_status;
     }
 
-    // 1. Read L1X (Front, Left, Right)
-    (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
-
-    // 2. Read L0X (Rear Left, Rear Right)
-    uint16_t dist_l0x[2] = {8191U, 8191U};
-    vl53_read_multi(dist_l0x);
-    rear_right_mm = dist_l0x[0]; // Assuming XSHUT4
-    rear_left_mm = dist_l0x[1];  // Assuming XSHUT5
+    (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &rear_right_l1, &rear_left_l1);
+#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
+    rear_right_mm = vl53l0x_read_distance(rear_right_handle);
+    rear_left_mm = vl53l0x_read_distance(rear_left_handle);
+#else
+    rear_right_mm = 0U;
+    rear_left_mm = 0U;
+#endif
 
     last_status.left = is_valid_target(left_mm);
     last_status.front = is_valid_target(front_mm);
@@ -290,6 +311,7 @@ opponent_status_t distance_sensor_read_opponent(void)
     last_status.rear_right = is_valid_target(rear_right_mm);
     last_status.rear_left = is_valid_target(rear_left_mm);
     last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, rear_right_mm, rear_left_mm);
+    distance_sensor_update_debug_leds(&last_status);
 
     return last_status;
 }

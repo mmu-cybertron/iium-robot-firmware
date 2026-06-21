@@ -13,15 +13,15 @@
 #include "distance_sensor.h"
 #include "vl53l1_platform.h"
 #include "VL53L1X_api.h"
-//
-//#include "edge_detector.h"
-
-
+#include "vesc/vescuart.h"
 
 extern uint32_t HAL_GetTick(void);
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 #define SM_Signal_Pin GPIO_PIN_13
 #define SM_Signal_GPIO_Port GPIOC
+
+#if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
 
 HAL_StatusTypeDef usart1_log_write(const uint8_t *data, size_t length)
 {
@@ -110,10 +110,13 @@ int __io_getchar(void)
     return (int)data;
 }
 
+#endif /* ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE */
+
 void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
     uint32_t last_wait_log_ms = HAL_GetTick();
+    uint32_t last_tof_led_update_ms = HAL_GetTick();
     uint8_t robot_was_running = 0U;
 
     LOG_PRINT("USART1 logging ready\r\n");
@@ -140,7 +143,7 @@ void app_main(void)
     // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
     // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
     // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
-
+    HAL_GPIO_WritePin(LED_D8_GPIO_Port,LED_D8_Pin, GPIO_PIN_RESET);
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
     //edge_detector_init();
@@ -163,20 +166,23 @@ void app_main(void)
     /* Main game loop */
     while (1) {
         const uint32_t now_ms = HAL_GetTick();
-        const opponent_status_t tofData = distance_sensor_read_opponent();
 
-// Log all sensors periodically (every 200ms to avoid flooding UART)
-static uint32_t last_sensor_log_ms = 0U;
-if ((now_ms - last_sensor_log_ms) >= 200U) {
-    last_sensor_log_ms = now_ms;
-    LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
-              (int)tofData.front,
-              (int)tofData.left,
-              (int)tofData.right,
-              (int)tofData.rear_right,
-              (int)tofData.rear_left,
-              (unsigned int)tofData.distance_mm);
-}
+        #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
+            const opponent_status_t tofData = distance_sensor_read_opponent();
+
+            // Log all sensors periodically (every 200ms to avoid flooding UART)
+            static uint32_t last_sensor_log_ms = 0U;
+            if ((now_ms - last_sensor_log_ms) >= 200U) {
+                last_sensor_log_ms = now_ms;
+                LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                        (int)tofData.front,
+                        (int)tofData.left,
+                        (int)tofData.right,
+                        (int)tofData.rear_right,
+                        (int)tofData.rear_left,
+                        (unsigned int)tofData.distance_mm);
+            }
+        #endif
 
 //		edge_detector_update();
 //
@@ -192,6 +198,13 @@ if ((now_ms - last_sensor_log_ms) >= 200U) {
 //		    }
 
         if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+            #if ROBOT_ACTIVE_MODE != ROBOT_MODE_LOGGING_ENABLE
+            if ((now_ms - last_tof_led_update_ms) >= 100U) {
+                last_tof_led_update_ms = now_ms;
+                (void)distance_sensor_read_opponent();
+            }
+            #endif
+
             if (robot_was_running) {
                 robot_was_running = 0U;
                 motor_control_stop();

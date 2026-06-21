@@ -383,11 +383,11 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LEFT_DIR_Pin|RIGHT_DIR_Pin|GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LEFT_DIR_Pin|RIGHT_DIR_Pin|LED_D8_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin|XSHUT_2_Pin|XSHUT_3_Pin|XSHUT_4_Pin
-                          |XSHUT_5_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LED_D6_Pin|LED_D7_Pin|XSHUT_1_Pin|XSHUT_2_Pin
+                          |XSHUT_3_Pin|XSHUT_4_Pin|XSHUT_5_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SM_Signal_Pin */
   GPIO_InitStruct.Pin = SM_Signal_Pin;
@@ -395,8 +395,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SM_Signal_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEFT_DIR_Pin RIGHT_DIR_Pin PA12 */
-  GPIO_InitStruct.Pin = LEFT_DIR_Pin|RIGHT_DIR_Pin|GPIO_PIN_12;
+  /*Configure GPIO pins : LEFT_DIR_Pin RIGHT_DIR_Pin LED_D8_Pin */
+  GPIO_InitStruct.Pin = LEFT_DIR_Pin|RIGHT_DIR_Pin|LED_D8_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -405,13 +405,13 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : IR4_DO_Pin IR3_DO_Pin IR2_DO_Pin IR1_DO_Pin */
   GPIO_InitStruct.Pin = IR4_DO_Pin|IR3_DO_Pin|IR2_DO_Pin|IR1_DO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : XSHUT_1_Pin XSHUT_2_Pin XSHUT_3_Pin XSHUT_4_Pin
-                           XSHUT_5_Pin */
-  GPIO_InitStruct.Pin = XSHUT_1_Pin|XSHUT_2_Pin|XSHUT_3_Pin|XSHUT_4_Pin
-                          |XSHUT_5_Pin;
+  /*Configure GPIO pins : LED_D6_Pin LED_D7_Pin XSHUT_1_Pin XSHUT_2_Pin
+                           XSHUT_3_Pin XSHUT_4_Pin XSHUT_5_Pin */
+  GPIO_InitStruct.Pin = LED_D6_Pin|LED_D7_Pin|XSHUT_1_Pin|XSHUT_2_Pin
+                          |XSHUT_3_Pin|XSHUT_4_Pin|XSHUT_5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
