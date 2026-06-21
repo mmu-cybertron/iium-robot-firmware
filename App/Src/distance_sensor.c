@@ -270,5 +270,12 @@ opponent_status_t distance_sensor_read_opponent(void)
     last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, rear_right_mm, rear_left_mm);
     distance_sensor_update_debug_leds(&last_status);
 
+    //testing code
+    if (last_status.front) {
+        HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_SET);
+    }
+    
+
+
     return last_status;
 }
