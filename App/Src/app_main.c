@@ -174,13 +174,13 @@ void app_main(void)
             static uint32_t last_sensor_log_ms = 0U;
             if ((now_ms - last_sensor_log_ms) >= 200U) {
                 last_sensor_log_ms = now_ms;
-                LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
-                        (int)tofData.front,
-                        (int)tofData.left,
-                        (int)tofData.right,
-                        (int)tofData.rear_right,
-                        (int)tofData.rear_left,
-                        (unsigned int)tofData.distance_mm);
+                // LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                //         (int)tofData.front,
+                //         (int)tofData.left,
+                //         (int)tofData.right,
+                //         (int)tofData.rear_right,
+                //         (int)tofData.rear_left,
+                //         (unsigned int)tofData.distance_mm);
             }
         #endif
 

@@ -288,6 +288,9 @@ opponent_status_t distance_sensor_read_opponent(void)
     }
 
     (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
+
+    LOG_PRINT("%u front, %u left, %u right\r\n", (unsigned int)front_mm, (unsigned int)left_mm, (unsigned int)right_mm);
+
 #if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
     rear_right_mm = vl53l0x_read_distance(rear_right_handle);
     rear_left_mm = vl53l0x_read_distance(rear_left_handle);
@@ -305,11 +308,21 @@ opponent_status_t distance_sensor_read_opponent(void)
     //distance_sensor_update_debug_leds(&last_status);
 
     //testing code
-    if (last_status.front) {
-        HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_SET);
-    }
+//    if (last_status.front) {
+//        HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_SET);
+//    }
     
 
 
     return last_status;
+}
+
+uint16_t front_mm_return(void)
+{
+	uint16_t left_mm = 8191U, front_mm = 8191U, right_mm = 8191U;
+	    uint16_t rear_right_mm = 8191U, rear_left_mm = 8191U;
+	    uint16_t dummy = 0U;
+	(void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
+
+	return front_mm;
 }

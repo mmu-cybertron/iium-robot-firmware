@@ -1,6 +1,7 @@
 #include "state_machine.h"
 
 #include "edge_detector.h"
+#include "distance_sensor.h"
 #include "failsafe.h"
 #include "motor_control.h"
 #include "motion.h"
@@ -86,10 +87,10 @@ static uint8_t vesc_overcurrent_faults_clear(void)
 
 void state_machine_init(void)
 {
-    VescUart_Init(&vesc1, &huart1, 100);
-    VescUart_Init(&vesc2, &huart2, 100);
-
-    vesc_stop_all();
+//    VescUart_Init(&vesc1, &huart1, 100);
+//    VescUart_Init(&vesc2, &huart2, 100);
+//
+//    vesc_stop_all();
     current_state = ROBOT_STATE_IDLE;
     is_escaping = 0;
     motor_control_stop();
@@ -111,8 +112,8 @@ void state_machine_update(void)
     {
         return;
     }
-    else if (vesc_fault_latched)
-    {
+//    else if (vesc_fault_latched)
+//    {
         //     current_state = ROBOT_STATE_FAULT;
         //     vesc_stop_all();
 
@@ -126,7 +127,7 @@ void state_machine_update(void)
         //             LOG_PRINT("VESC overcurrent still active. Recovery wait restarted\r\n");
         //         }
         //     }
-    }
+//    }
     else if (edge_detector_is_edge_detected() || is_escaping)
     {
         uint32_t current_time = HAL_GetTick();
@@ -178,9 +179,11 @@ void state_machine_update(void)
     case ROBOT_STATE_ATTACK:
 
         //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
-
-    	motor_control_set_pwm(1500, 1500);
-        LOG_PRINT("Attacking\n");
+    	int front_mm = front_mm_return();
+    	if (front_mm <= 200){
+    		motor_control_set_pwm(2250, 2250);
+    	}
+        //LOG_PRINT("Attacking\n");
         HAL_GPIO_WritePin(LED_D6_GPIO_Port,
         		LED_D6_Pin,
 				GPIO_PIN_RESET);
@@ -189,7 +192,7 @@ void state_machine_update(void)
 				GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED_D8_GPIO_Port,
         		LED_D8_Pin,
-				GPIO_PIN_SET);
+				GPIO_PIN_RESET);
         break;
 
     case ROBOT_STATE_EDGE_ESCAPE:
@@ -213,10 +216,10 @@ void state_machine_update(void)
     		motor_control_update();
     		HAL_Delay(200);
     	} else if (edge.rear_left || edge.rear_right) {
-    		motor_control_set_pwm(2250, 2250);
+//    		motor_control_set_pwm(2250, 2250);
     	}
 
-        LOG_PRINT("Edge detected! Escaping with VESC current\r\n");
+        //LOG_PRINT("Edge detected! Escaping with VESC current\r\n");
         break;
 
     case ROBOT_STATE_SEARCH:
@@ -224,8 +227,8 @@ void state_machine_update(void)
         {
             // motor_control_set_command(motion_rotate_left(ROBOT_TRACK_PWM));
 
-        	motor_control_set_pwm(1600, 2100);
-            LOG_PRINT("Opponent on the left! Rotating left\n");
+        	motor_control_set_pwm(1600, 2150);
+            //LOG_PRINT("Opponent on the left! Rotating left\n");
 
             HAL_GPIO_WritePin(LED_D6_GPIO_Port,
                       LED_D6_Pin,
@@ -243,8 +246,8 @@ void state_machine_update(void)
         {
             //motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
 
-        	motor_control_set_pwm(2100, 1600);
-            LOG_PRINT("Opponent on the right! Rotating right\n");
+        	motor_control_set_pwm(2150, 1600);
+            //LOG_PRINT("Opponent on the right! Rotating right\n");
             HAL_GPIO_WritePin(LED_D6_GPIO_Port,
             		LED_D6_Pin,
 					GPIO_PIN_RESET);
@@ -262,24 +265,27 @@ void state_machine_update(void)
             // VescUart_SetDuty(&vesc2, 0.94f);
             // VescUart_SetCurrent(&vesc1, 10.0f);
             // VescUart_SetCurrent(&vesc2, 10.0f);
-            motor_control_set_pwm(2250, 900);
+            // motor_control_set_pwm(1700, 1700);
             // LOG_PRINT("No opponent detected! Searching\n");
+
+        	motor_control_set_pwm(1500, 1500);
 
             HAL_GPIO_WritePin(LED_D6_GPIO_Port,
             		LED_D6_Pin,
-					GPIO_PIN_RESET);
+					GPIO_PIN_SET);
             HAL_GPIO_WritePin(LED_D7_GPIO_Port,
             		LED_D7_Pin,
-					GPIO_PIN_RESET);
+					GPIO_PIN_SET);
             HAL_GPIO_WritePin(LED_D8_GPIO_Port,
             		LED_D8_Pin,
-					GPIO_PIN_RESET);
+					GPIO_PIN_SET);
         }
         break;
 
     case ROBOT_STATE_IDLE:
-    	motor_control_set_pwm(1500, 1500);
-    	break;
+//    	motor_control_set_pwm(1500, 1500);
+//    	break;
+    	current_state = ROBOT_STATE_SEARCH;
     case ROBOT_STATE_RECOVER:
     case ROBOT_STATE_FAULT:
     default:

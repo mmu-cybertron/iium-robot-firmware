@@ -26,139 +26,80 @@ void robot_init(void)
 
 void robot_update(void)
 {
-    static uint8_t motor_test_done;
-
-    if (motor_test_done) {
-        return;
-    }
+//    static uint8_t motor_test_done;
+//
+//    if (motor_test_done) {
+//        return;
+//    }
+//
+//    failsafe_update();
+//
+//    if (failsafe_is_faulted()) {
+//        motor_control_stop();
+//        motor_control_update();
+//        return;
+//    }
+//
+//    //edge_detector_update();
+//    //  opponent_tracker_update();
+//     LOG_PRINT("HI\n");
+//
+//    motor_control_set_pwm(900, 900);
+//    motor_control_update();
+//
+//    // LOG_PRINT("HI2\n");
+//    // // state_machine_update();
+//
+//     HAL_Delay(1000);
+//
+//     motor_control_set_pwm(2250, 2250);
+//     motor_control_update();
+//
+//     HAL_Delay(1000);
+//
+//     motor_control_set_pwm(900, 900);
+//    motor_control_update();
+//
+//    // LOG_PRINT("HI2\n");
+//    // // state_machine_update();
+//
+//     HAL_Delay(1000);
+//
+//     motor_control_set_pwm(2250, 2250);
+//     motor_control_update();
+//
+//    // HAL_Delay(1000);
+//
+//    motor_control_stop();
+//    motor_test_done = 1U;
+//    LOG_PRINT("Motor test complete\r\n");
 
     failsafe_update();
-    
-    if (failsafe_is_faulted()) {
-        motor_control_stop();
-        motor_control_update();
-        return;
-    }
 
-    //edge_detector_update();
-    //  opponent_tracker_update();
-     LOG_PRINT("HI\n");
-     
-
-
-    motor_control_set_pwm(900, 900);
-    motor_control_update();
-    
-    // LOG_PRINT("HI2\n");
-    // // state_machine_update();
-    
-   
-     HAL_Delay(1000);
-
-     motor_control_set_pwm(2250, 2250);
-     motor_control_update();
-
-     HAL_Delay(1000);
-
-     motor_control_set_pwm(900, 900);
-    motor_control_update();
-    
-    // LOG_PRINT("HI2\n");
-    // // state_machine_update();
-    
-   
-     HAL_Delay(1000);
-
-     motor_control_set_pwm(2250, 2250);
-     motor_control_update();
-
-    // HAL_Delay(1000);
-
-    motor_control_stop();
-    motor_test_done = 1U;
-    LOG_PRINT("Motor test complete\r\n");
-
-    if (!motor_test_done)
+    if (failsafe_is_faulted())
     {
-        // return;
-        failsafe_update();
-
-        if (failsafe_is_faulted())
-        {
-            motor_control_stop();
-            motor_control_update();
-            return;
-        }
-
-        edge_detector_update();
-
-        opponent_tracker_update();
-        
-        state_machine_update();
-
-        // motor_control_set_pwm(900, 900);
-        // HAL_Delay(1000);
-
-        //motor_control_update();
-
-        opponent_tracker_update();
-
-        // motor_control_set_pwm(2250, 2250);
-        // HAL_Delay(1000);
-
-        motor_control_update();
+    	motor_control_stop();
+    	motor_control_update();
+    	return;
     }
 
-    // if (motor_test_done) {
-    //     return;
-    // }
+    edge_detector_update();
 
-    // failsafe_update();
-    
-    // if (failsafe_is_faulted()) {
-    //     motor_control_stop();
-    //     motor_control_update();
-    //     return;
-    // }
+    opponent_tracker_update();
 
-    // //edge_detector_update();
-    // //  opponent_tracker_update();
-    //  LOG_PRINT("HI\n");
-     
-
+    state_machine_update();
 
     // motor_control_set_pwm(900, 900);
-    // motor_control_update();
-    
-    // // LOG_PRINT("HI2\n");
-    // // // state_machine_update();
-    
-   
-    //  HAL_Delay(1000);
+    // HAL_Delay(1000);
 
-    //  motor_control_set_pwm(2250, 2250);
-    //  motor_control_update();
+    //motor_control_update();
 
-    //  HAL_Delay(1000);
+    opponent_tracker_update();
 
-    //  motor_control_set_pwm(900, 900);
-    // motor_control_update();
-    
-    // // LOG_PRINT("HI2\n");
-    // // // state_machine_update();
-    
-   
-    //  HAL_Delay(1000);
+    // motor_control_set_pwm(2250, 2250);
+    // HAL_Delay(1000);
 
-    //  motor_control_set_pwm(2250, 2250);
-    //  motor_control_update();
-
-    // // HAL_Delay(1000);
-
-    // motor_control_stop();
-    // motor_test_done = 1U;
-    // LOG_PRINT("Motor test complete\r\n");
-
+    motor_control_update();
 }
 
 void robot_background(void)
