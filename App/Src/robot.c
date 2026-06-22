@@ -19,7 +19,7 @@ void robot_init(void)
     edge_detector_init();
     opponent_tracker_init();
     failsafe_init();
-    // state_machine_init();
+    state_machine_init();
 
     LOG_PRINT("Robot initialized\r\n");
 }
@@ -95,16 +95,21 @@ void robot_update(void)
 
         edge_detector_update();
 
-        //state_machine_update();
+        opponent_tracker_update();
         
-        motor_control_update();
+        state_machine_update();
+
+        // motor_control_set_pwm(900, 900);
+        // HAL_Delay(1000);
+
+        //motor_control_update();
 
         opponent_tracker_update();
 
         // motor_control_set_pwm(2250, 2250);
         // HAL_Delay(1000);
 
-        // motor_control_update();
+        motor_control_update();
     }
 
     // if (motor_test_done) {

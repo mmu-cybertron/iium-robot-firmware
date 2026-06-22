@@ -143,7 +143,7 @@ void app_main(void)
     // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
     // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
     // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
-    HAL_GPIO_WritePin(LED_D8_GPIO_Port,LED_D8_Pin, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(LED_D8_GPIO_Port,LED_D8_Pin, GPIO_PIN_RESET);
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
     //edge_detector_init();

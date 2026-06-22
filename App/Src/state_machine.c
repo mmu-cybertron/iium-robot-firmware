@@ -12,7 +12,7 @@
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-#define EDGE_ESCAPE_DURATION_MS 100U
+#define EDGE_ESCAPE_DURATION_MS 510U
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
@@ -22,8 +22,6 @@ static uint32_t vesc_fault_start_time = 0;
 static uint8_t is_escaping = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
-
-#define EDGE_ESCAPE_DURATION_MS 1000U
 
 static robot_state_t current_state;
 static uint32_t escape_start_time = 0;
@@ -119,6 +117,7 @@ void state_machine_init(void)
 void state_machine_update(void)
 {
     const opponent_status_t opponent = opponent_tracker_get_status();
+    const edge_status_t edge = edge_detector_get_status();
 
     if (failsafe_is_faulted())
     {
@@ -164,15 +163,10 @@ void state_machine_update(void)
         {
             // VescUart_SetCurrent(&vesc1, -10.0f);
             // VescUart_SetCurrent(&vesc2, -10.0f);
-            motor_control_set_pwm(900, 900);
-            motor_control_update();
-            HAL_Delay(300);
-            motor_control_set_pwm(900, 2250);
-            motor_control_update();
-            HAL_Delay(200);
+
             is_escaping = 0;
-            current_state = ROBOT_STATE_IDLE;
-            vesc_stop_all();
+            current_state = ROBOT_STATE_SEARCH;
+            //vesc_stop_all();
             LOG_PRINT("Edge escape complete. VESC current stopped.\r\n");
 
             // run_once = 1;
@@ -200,19 +194,45 @@ void state_machine_update(void)
     {
     case ROBOT_STATE_ATTACK:
 
-        motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
+        //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
+
+    	motor_control_set_pwm(1500, 1500);
         LOG_PRINT("Attacking\n");
+        HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+        		LED_D6_Pin,
+				GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+        		LED_D7_Pin,
+				GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+        		LED_D8_Pin,
+				GPIO_PIN_SET);
         break;
 
     case ROBOT_STATE_EDGE_ESCAPE:
         // motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
-        motor_control_set_pwm(1500, 1500);
+        // motor_control_set_pwm(2250, 2250);
         // VescUart_SetDuty(&vesc1, -0.94f);
         // VescUart_SetDuty(&vesc2, -0.94f);
         // VescUart_SetBrakeCurrent(&vesc1, 20.0f);
         // VescUart_SetBrakeCurrent(&vesc2, 20.0f);
+        
+    	if (edge.front_left || edge.front_right) {
+    		motor_control_set_pwm(1500, 1500);
+    		motor_control_update();
+    		HAL_Delay(10);
 
-        // motor_control_set_pwm(1500, 1500);
+    		motor_control_set_pwm(900, 900);
+    		motor_control_update();
+    		HAL_Delay(300);
+
+    		motor_control_set_pwm(900, 2250);
+    		motor_control_update();
+    		HAL_Delay(200);
+    	} else if (edge.rear_left || edge.rear_right) {
+    		motor_control_set_pwm(2250, 2250);
+    	}
+
         LOG_PRINT("Edge detected! Escaping with VESC current\r\n");
         break;
 
@@ -220,12 +240,37 @@ void state_machine_update(void)
         if (opponent.left)
         {
             // motor_control_set_command(motion_rotate_left(ROBOT_TRACK_PWM));
+
+        	motor_control_set_pwm(1600, 2100);
             LOG_PRINT("Opponent on the left! Rotating left\n");
+
+            HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+                      LED_D6_Pin,
+                      GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+                      LED_D7_Pin,
+					  GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+                      LED_D8_Pin,
+					  GPIO_PIN_RESET);
+
+
         }
         else if (opponent.right)
         {
-            motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
+            //motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
+
+        	motor_control_set_pwm(2100, 1600);
             LOG_PRINT("Opponent on the right! Rotating right\n");
+            HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+            		LED_D6_Pin,
+					GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+            		LED_D7_Pin,
+					GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+            		LED_D8_Pin,
+					GPIO_PIN_RESET);
         }
         else
         {
@@ -234,13 +279,24 @@ void state_machine_update(void)
             // VescUart_SetDuty(&vesc2, 0.94f);
             // VescUart_SetCurrent(&vesc1, 10.0f);
             // VescUart_SetCurrent(&vesc2, 10.0f);
-            HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_SET);
-            motor_control_set_pwm(2250, 2250);
+            motor_control_set_pwm(2250, 900);
             // LOG_PRINT("No opponent detected! Searching\n");
+
+            HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+            		LED_D6_Pin,
+					GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+            		LED_D7_Pin,
+					GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+            		LED_D8_Pin,
+					GPIO_PIN_RESET);
         }
         break;
 
     case ROBOT_STATE_IDLE:
+    	motor_control_set_pwm(1500, 1500);
+    	break;
     case ROBOT_STATE_RECOVER:
     case ROBOT_STATE_FAULT:
     default:
