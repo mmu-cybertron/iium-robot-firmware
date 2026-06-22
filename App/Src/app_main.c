@@ -116,7 +116,9 @@ void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
     uint32_t last_wait_log_ms = HAL_GetTick();
+#if ROBOT_ACTIVE_MODE != ROBOT_MODE_LOGGING_ENABLE
     uint32_t last_tof_led_update_ms = HAL_GetTick();
+#endif
     uint8_t robot_was_running = 0U;
 
     LOG_PRINT("USART1 logging ready\r\n");
@@ -168,19 +170,10 @@ void app_main(void)
         const uint32_t now_ms = HAL_GetTick();
 
         #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
-            const opponent_status_t tofData = distance_sensor_read_opponent();
-
-            // Log all sensors periodically (every 200ms to avoid flooding UART)
-            static uint32_t last_sensor_log_ms = 0U;
-            if ((now_ms - last_sensor_log_ms) >= 200U) {
-                last_sensor_log_ms = now_ms;
-                // LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
-                //         (int)tofData.front,
-                //         (int)tofData.left,
-                //         (int)tofData.right,
-                //         (int)tofData.rear_right,
-                //         (int)tofData.rear_left,
-                //         (unsigned int)tofData.distance_mm);
+            static uint32_t last_sensor_led_update_ms = 0U;
+            if ((now_ms - last_sensor_led_update_ms) >= 50U) {
+                last_sensor_led_update_ms = now_ms;
+                (void)distance_sensor_read_opponent();
             }
         #endif
 
