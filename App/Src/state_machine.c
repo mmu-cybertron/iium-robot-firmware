@@ -13,7 +13,7 @@
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-#define EDGE_ESCAPE_DURATION_MS 510U
+#define EDGE_ESCAPE_DURATION_MS 500U
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
@@ -21,6 +21,7 @@ static uint32_t escape_start_time = 0;
 static uint32_t last_vesc_fault_poll_time = 0;
 static uint32_t vesc_fault_start_time = 0;
 static uint8_t is_escaping = 0;
+static uint8_t edge_mode = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
 
@@ -139,14 +140,26 @@ void state_machine_update(void)
             vesc_stop_all();
         }
 
+        if (edge.front_left || edge.front_right) {
+        	edge_mode = 1;
+        } else if (edge.rear_left || edge.rear_right) {
+        	edge_mode = 2;
+        }
+
         if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
         {
-            current_state = ROBOT_STATE_EDGE_ESCAPE;
+        	if (edge_mode == 1){
+        		current_state = ROBOT_STATE_EDGE_FRONT_ESCAPE;
+        	} else if (edge_mode == 2){
+        		current_state = ROBOT_STATE_EDGE_BACK_ESCAPE;
+        	}
+
         }
         else
         {
             // VescUart_SetCurrent(&vesc1, -10.0f);
             // VescUart_SetCurrent(&vesc2, -10.0f);
+        	edge_mode = 0;
 
             is_escaping = 0;
             current_state = ROBOT_STATE_SEARCH;
@@ -180,7 +193,7 @@ void state_machine_update(void)
 
         //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
     	int front_mm = front_mm_return();
-    	if (front_mm <= 200){
+    	if (front_mm <= 500){
     		motor_control_set_pwm(2250, 2250);
     	}
         //LOG_PRINT("Attacking\n");
@@ -195,7 +208,7 @@ void state_machine_update(void)
 				GPIO_PIN_RESET);
         break;
 
-    case ROBOT_STATE_EDGE_ESCAPE:
+    case ROBOT_STATE_EDGE_FRONT_ESCAPE:
         // motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
         // motor_control_set_pwm(2250, 2250);
         // VescUart_SetDuty(&vesc1, -0.94f);
@@ -203,24 +216,14 @@ void state_machine_update(void)
         // VescUart_SetBrakeCurrent(&vesc1, 20.0f);
         // VescUart_SetBrakeCurrent(&vesc2, 20.0f);
         
-    	if (edge.front_left || edge.front_right) {
-    		motor_control_set_pwm(1500, 1500);
-    		motor_control_update();
-    		HAL_Delay(10);
-
-    		motor_control_set_pwm(900, 900);
-    		motor_control_update();
-    		HAL_Delay(300);
-
-    		motor_control_set_pwm(900, 2250);
-    		motor_control_update();
-    		HAL_Delay(200);
-    	} else if (edge.rear_left || edge.rear_right) {
-//    		motor_control_set_pwm(2250, 2250);
-    	}
+    	motor_control_set_pwm(900, 900);
 
         //LOG_PRINT("Edge detected! Escaping with VESC current\r\n");
         break;
+
+    case ROBOT_STATE_EDGE_BACK_ESCAPE:
+    	motor_control_set_pwm(2250, 2250);
+    	break;
 
     case ROBOT_STATE_SEARCH:
         if (opponent.left)
