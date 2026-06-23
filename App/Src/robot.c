@@ -13,13 +13,14 @@
 void robot_init(void)
 {
 	LOG_PRINT("Hello from init\n");
-
+    
     motor_control_init();
     HAL_Delay(1000);
     edge_detector_init();
-    opponent_tracker_init();
+    //opponent_tracker_init();
     failsafe_init();
     state_machine_init();
+    vl53l0x_init_rear_sensors();
 
     LOG_PRINT("Robot initialized\r\n");
 }
@@ -86,7 +87,7 @@ void robot_update(void)
     edge_detector_update();
 
     opponent_tracker_update();
-
+    
     state_machine_update();
 
     // motor_control_set_pwm(900, 900);
@@ -94,7 +95,6 @@ void robot_update(void)
 
     //motor_control_update();
 
-    opponent_tracker_update();
 
     // motor_control_set_pwm(2250, 2250);
     // HAL_Delay(1000);

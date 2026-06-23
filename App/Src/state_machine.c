@@ -140,21 +140,20 @@ void state_machine_update(void)
             vesc_stop_all();
         }
 
-        // if (edge.front_left || edge.front_right) {
-        // 	edge_mode = 1;
-        // } else if (edge.rear_left || edge.rear_right) {
-        // 	edge_mode = 2;
-        // }
+         if (edge.front_left || edge.front_right) {
+         	edge_mode = 1;
+         } else if (edge.rear_left || edge.rear_right) {
+         	edge_mode = 2;
+         }
 
         if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
         {
-        	// if (edge_mode == 1){
-        	// 	current_state = ROBOT_STATE_EDGE_FRONT_ESCAPE;
-        	// } else if (edge_mode == 2){
-        	// 	current_state = ROBOT_STATE_EDGE_BACK_ESCAPE;
-        	// }
+        	 if (edge_mode == 1){
+        	 	current_state = ROBOT_STATE_EDGE_FRONT_ESCAPE;
+        	 } else if (edge_mode == 2){
+        	 	current_state = ROBOT_STATE_EDGE_BACK_ESCAPE;
+        	 }
 
-            current_state = ROBOT_STATE_EDGE_FRONT_ESCAPE;
         }
         else
         {
