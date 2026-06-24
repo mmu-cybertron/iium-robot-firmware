@@ -11,7 +11,7 @@
 #include "vesc/vescuart.h"
 
 #define EDGE_TEST 0
-#define OPPONENT_TEST 0
+#define OPPONENT_TEST 1
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -188,7 +188,7 @@ void state_machine_update(void)
     {
         current_state = ROBOT_STATE_ATTACK;
     }
-    else if (opponent.left || opponent.right)
+    else if (opponent.left || opponent.right || opponent.rear_left || opponent.rear_right)
     {
         current_state = ROBOT_STATE_SEARCH;
     }
@@ -291,6 +291,14 @@ void state_machine_update(void)
             HAL_GPIO_WritePin(LED_D8_GPIO_Port,
             		LED_D8_Pin,
 					GPIO_PIN_RESET);
+        }
+        else if (opponent.rear_left)
+        {
+        	motor_control_set_pwm(2250, 900);
+        }
+        else if (opponent.rear_right)
+        {
+        	motor_control_set_pwm(900, 2250);
         }
         else
         {
