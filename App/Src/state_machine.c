@@ -10,6 +10,9 @@
 #include "usart1_log.h"
 #include "vesc/vescuart.h"
 
+#define EDGE_TEST 0
+#define OPPONENT_TEST 0
+
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
@@ -26,6 +29,7 @@ static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
 
 static robot_state_t current_state;
+static robot_edge_escape_mode_t current_escape_mode;
 
 VescUart_t vesc1;
 VescUart_t vesc2;
@@ -129,8 +133,10 @@ void state_machine_update(void)
         //         }
         //     }
 //    }
+#if EDGE_TEST
     else if (edge_detector_is_edge_detected() || is_escaping)
     {
+        
         uint32_t current_time = HAL_GetTick();
 
         if (!is_escaping)
@@ -140,27 +146,25 @@ void state_machine_update(void)
             vesc_stop_all();
         }
 
-         if (edge.front_left || edge.front_right) {
-         	edge_mode = 1;
-         } else if (edge.rear_left || edge.rear_right) {
-         	edge_mode = 2;
-         }
+        if (edge.front_right && edge.rear_right) {
+            current_escape_mode = ROBOT_ESCAPE_LEFT;
+        } else if (edge.front_left && edge.rear_left) {
+            current_escape_mode = ROBOT_ESCAPE_RIGHT;
+        } else if (edge.front_left || edge.front_right) {
+         	current_escape_mode = ROBOT_ESCAPE_BACK;
+        } else if (edge.rear_left || edge.rear_right) {
+            current_escape_mode = ROBOT_ESCAPE_FRONT;
+        }
 
         if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
         {
-        	 if (edge_mode == 1){
-        	 	current_state = ROBOT_STATE_EDGE_FRONT_ESCAPE;
-        	 } else if (edge_mode == 2){
-        	 	current_state = ROBOT_STATE_EDGE_BACK_ESCAPE;
-        	 }
-
+            current_state = ROBOT_STATE_EDGE_ESCAPE;
         }
         else
         {
             // VescUart_SetCurrent(&vesc1, -10.0f);
             // VescUart_SetCurrent(&vesc2, -10.0f);
-        	edge_mode = 0;
-
+        	current_escape_mode = ROBOT_ESCAPE_NONE;
             is_escaping = 0;
             current_state = ROBOT_STATE_SEARCH;
             //vesc_stop_all();
@@ -173,7 +177,11 @@ void state_machine_update(void)
         // vesc_fault_start_time = HAL_GetTick();
         // current_state = ROBOT_STATE_FAULT;
         // vesc_stop_all();
-    }
+
+       
+    } 
+#endif
+#if OPPONENT_TEST
     else if (opponent.front)
     {
         current_state = ROBOT_STATE_ATTACK;
@@ -182,18 +190,56 @@ void state_machine_update(void)
     {
         current_state = ROBOT_STATE_SEARCH;
     }
+#endif
     else
     {
         current_state = ROBOT_STATE_SEARCH;
     }
 
+
     switch (current_state)
     {
+        
+
+        #if EDGE_TEST
+    case ROBOT_STATE_EDGE_ESCAPE:
+        // motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
+        // motor_control_set_pwm(2250, 2250);
+        // VescUart_SetDuty(&vesc1, -0.94f);
+        // VescUart_SetDuty(&vesc2, -0.94f);
+        // VescUart_SetBrakeCurrent(&vesc1, 20.0f);
+        // VescUart_SetBrakeCurrent(&vesc2, 20.0f);
+        
+
+        switch (current_escape_mode) {
+            case ROBOT_ESCAPE_BACK:
+                motor_control_set_pwm(900, 900);
+                break;
+            case ROBOT_ESCAPE_FRONT:
+                motor_control_set_pwm(2250, 2250);
+                break;
+            case ROBOT_ESCAPE_LEFT:
+                motor_control_set_pwm(1600, 2200);
+                break;
+            case ROBOT_ESCAPE_RIGHT:
+                motor_control_set_pwm(2200, 1600);
+                break;
+            case ROBOT_ESCAPE_NONE:
+            default:
+            	motor_control_stop;
+                break;
+        }
+
+        //LOG_PRINT("Edge detected! Escaping with VESC current\r\n");
+        break;
+        #endif
+
+    #if OPPONENT_TEST
     case ROBOT_STATE_ATTACK:
 
         //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
     	int front_mm = front_mm_return();
-    	if (front_mm <= 500){
+    	if (front_mm <= 400){
     		motor_control_set_pwm(1950, 1950);
     	}
         //LOG_PRINT("Attacking\n");
@@ -205,25 +251,8 @@ void state_machine_update(void)
 				GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED_D8_GPIO_Port,
         		LED_D8_Pin,
-				GPIO_PIN_RESET);
+				GPIO_PIN_SET);
         break;
-
-    case ROBOT_STATE_EDGE_FRONT_ESCAPE:
-        // motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
-        // motor_control_set_pwm(2250, 2250);
-        // VescUart_SetDuty(&vesc1, -0.94f);
-        // VescUart_SetDuty(&vesc2, -0.94f);
-        // VescUart_SetBrakeCurrent(&vesc1, 20.0f);
-        // VescUart_SetBrakeCurrent(&vesc2, 20.0f);
-        
-    	motor_control_set_pwm(900, 900);
-
-        //LOG_PRINT("Edge detected! Escaping with VESC current\r\n");
-        break;
-
-    case ROBOT_STATE_EDGE_BACK_ESCAPE:
-    	motor_control_set_pwm(2250, 2250);
-    	break;
 
     case ROBOT_STATE_SEARCH:
         if (opponent.left)
@@ -284,11 +313,15 @@ void state_machine_update(void)
 					GPIO_PIN_SET);
         }
         break;
+    #else 
+    case ROBOT_STATE_SEARCH:
+        motor_control_set_pwm(1750, 1750);
+        break;
+    #endif
 
     case ROBOT_STATE_IDLE:
 //    	motor_control_set_pwm(1500, 1500);
 //    	break;
-    	current_state = ROBOT_STATE_SEARCH;
     case ROBOT_STATE_RECOVER:
     case ROBOT_STATE_FAULT:
     default:
