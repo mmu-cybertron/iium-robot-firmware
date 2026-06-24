@@ -177,6 +177,22 @@ void app_main(void)
             }
         #endif
 
+
+            const opponent_status_t tofData = distance_sensor_read_opponent();
+
+            // Log all sensors periodically (every 200ms to avoid flooding UART)
+            static uint32_t last_sensor_log_ms = 0U;
+            if ((now_ms - last_sensor_log_ms) >= 200U) {
+                last_sensor_log_ms = now_ms;
+                LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                          (int)tofData.front,
+                          (int)tofData.left,
+                          (int)tofData.right,
+                          (int)tofData.rear_right,
+                          (int)tofData.rear_left,
+                          (unsigned int)tofData.distance_mm);
+            }
+
 //		edge_detector_update();
 //
 //		 if (edge_detector_is_edge_detected())

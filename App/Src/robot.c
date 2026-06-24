@@ -22,7 +22,6 @@ void robot_init(void)
     opponent_tracker_init();
     failsafe_init();
     state_machine_init();
-    //vl53l0x_init_rear_sensors();
 
     LOG_PRINT("Robot initialized\r\n");
 }

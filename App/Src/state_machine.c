@@ -108,6 +108,8 @@ void state_machine_update(void)
     const opponent_status_t opponent = opponent_tracker_get_status();
     const edge_status_t edge = edge_detector_get_status();
 
+    //TOF_debug();
+
     if (failsafe_is_faulted())
     {
         current_state = ROBOT_STATE_FAULT;
