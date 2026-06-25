@@ -31,6 +31,8 @@ uint8_t game_mode_selector_is_locked(void);
 game_mode_t game_mode_selector_get_mode(void);
 void game_mode_selector_execute_initial_move(void);
 void game_mode_selector_reset_for_new_round(void);
+uint8_t game_mode_selector_is_initial_move_done(void);
+
 
 #ifdef __cplusplus
 }

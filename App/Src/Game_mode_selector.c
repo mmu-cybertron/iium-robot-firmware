@@ -2,23 +2,21 @@
 
 #include "main.h"
 #include "motor_control.h"
+#include "robot_config.h"
 #include "usart1_log.h"
 
 extern uint32_t HAL_GetTick(void);
 
-/* GPIO Pin definitions for buttons */
-#define MODE_PIN_PB12           GPIO_PIN_12
-#define MODE_PIN_GPIO_Port_PB12 GPIOB
-#define CONFIRM_PIN_PB13        GPIO_PIN_13
-#define CONFIRM_PIN_GPIO_Port_PB13 GPIOB
+/* Button pin definitions from main.h */
+/* Mode_Button_Pin = GPIO_PIN_12 (GPIOB)
+ * Confirm_Button_Pin = GPIO_PIN_13 (GPIOB)
+ */
 
-/* GPIO Pin definitions for LEDs */
-#define MODE1_LED_PIN       GPIO_PIN_15
-#define MODE1_LED_GPIO_Port GPIOB
-#define MODE2_LED_PIN       GPIO_PIN_14
-#define MODE2_LED_GPIO_Port GPIOB
-#define MODE3_LED_PIN       GPIO_PIN_8
-#define MODE3_LED_GPIO_Port GPIOA
+/* LED pin mapping (defined in main.h):
+ * GAME_MODE_1 -> LED_D7 (GPIOB, PIN_15)
+ * GAME_MODE_2 -> LED_D6 (GPIOB, PIN_14)
+ * GAME_MODE_3 -> LED_D8 (GPIOA, PIN_8)
+ */
 
 /* Timing constants (in milliseconds) */
 #define LONG_PRESS_THRESHOLD_MS  2000
@@ -29,12 +27,29 @@ extern uint32_t HAL_GetTick(void);
 #define TURN_DURATION_MS         1000
 #define FORWARD_DURATION_MS      1000
 
-/* Motor command definitions */
-#define MOTOR_FORWARD_PWM   100
-#define MOTOR_TURN_LEFT_PWM_L -80
-#define MOTOR_TURN_LEFT_PWM_R 80
-#define MOTOR_TURN_RIGHT_PWM_L 80
-#define MOTOR_TURN_RIGHT_PWM_R -80
+/* Motor command definitions
+ *
+ * IMPORTANT: motor_driver_set_pwm() writes these values DIRECTLY into the
+ * timer compare register (see motor_driver.c) - there is no sign handling,
+ * no scaling, and the DIR GPIO pins are never touched by the driver.
+ * Direction comes purely from where the value sits relative to
+ * MOTOR_PWM_NEUTRAL, same convention used in state_machine.c
+ * (e.g. ROBOT_ESCAPE_LEFT -> motor_control_set_pwm(1600, 2200)).
+ *
+ * PWM_TURN_OFFSET / PWM_FORWARD_OFFSET below are PLACEHOLDERS based on the
+ * literal values already used in state_machine.c (900-2250 range, neutral
+ * ~1500). Replace with your actual tuned offsets if different - what
+ * matters is that all values are expressed relative to MOTOR_PWM_NEUTRAL,
+ * not as small signed numbers around 0.
+ */
+#define PWM_FORWARD_OFFSET     250
+#define PWM_TURN_OFFSET        200
+
+#define MOTOR_FORWARD_PWM       (MOTOR_PWM_NEUTRAL + PWM_FORWARD_OFFSET)
+#define MOTOR_TURN_LEFT_PWM_L   (MOTOR_PWM_NEUTRAL - PWM_TURN_OFFSET)
+#define MOTOR_TURN_LEFT_PWM_R   (MOTOR_PWM_NEUTRAL + PWM_TURN_OFFSET)
+#define MOTOR_TURN_RIGHT_PWM_L  (MOTOR_PWM_NEUTRAL + PWM_TURN_OFFSET)
+#define MOTOR_TURN_RIGHT_PWM_R  (MOTOR_PWM_NEUTRAL - PWM_TURN_OFFSET)
 
 /* State variables */
 static mode_selector_state_t current_state = MODE_SEL_IDLE;
@@ -50,20 +65,22 @@ static uint8_t initial_move_phase = 0;  // 0=idle, 1=turn phase, 2=forward phase
 static void update_mode_leds(void)
 {
     /* Turn off all LEDs first */
-    HAL_GPIO_WritePin(MODE1_LED_GPIO_Port, MODE1_LED_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(MODE2_LED_GPIO_Port, MODE2_LED_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(MODE3_LED_GPIO_Port, MODE3_LED_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_RESET);
 
     /* Turn on LED for selected mode */
     switch (selected_mode) {
         case GAME_MODE_1:
-            HAL_GPIO_WritePin(MODE1_LED_GPIO_Port, MODE1_LED_PIN, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_SET);
             break;
         case GAME_MODE_2:
-            HAL_GPIO_WritePin(MODE2_LED_GPIO_Port, MODE2_LED_PIN, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_SET);
+
             break;
         case GAME_MODE_3:
-            HAL_GPIO_WritePin(MODE3_LED_GPIO_Port, MODE3_LED_PIN, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_SET);
+
             break;
         default:
             break;
@@ -73,38 +90,43 @@ static void update_mode_leds(void)
 /* Helper function: Turn on all LEDs (confirmation state) */
 static void turn_on_all_leds(void)
 {
-    HAL_GPIO_WritePin(MODE1_LED_GPIO_Port, MODE1_LED_PIN, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(MODE2_LED_GPIO_Port, MODE2_LED_PIN, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(MODE3_LED_GPIO_Port, MODE3_LED_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_SET);
 }
 
 /* Helper function: Turn off all LEDs */
 static void turn_off_all_leds(void)
 {
-    HAL_GPIO_WritePin(MODE1_LED_GPIO_Port, MODE1_LED_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(MODE2_LED_GPIO_Port, MODE2_LED_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(MODE3_LED_GPIO_Port, MODE3_LED_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_RESET);
 }
 
-/* Helper function: Read button states (GPIO_PIN_SET = pressed) */
+/* Helper function: Read button states (GPIO_PIN_RESET = pressed, button pulls pin low) */
 static uint8_t is_pb12_pressed(void)
 {
-    return HAL_GPIO_ReadPin(MODE_PIN_GPIO_Port_PB12, MODE_PIN_PB12) == GPIO_PIN_SET;
+    return HAL_GPIO_ReadPin(Mode_Button_GPIO_Port, Mode_Button_Pin) == GPIO_PIN_RESET;
 }
 
 static uint8_t is_pb13_pressed(void)
 {
-    return HAL_GPIO_ReadPin(CONFIRM_PIN_GPIO_Port_PB13, CONFIRM_PIN_PB13) == GPIO_PIN_SET;
+    return HAL_GPIO_ReadPin(Confirm_Button_GPIO_Port, Confirm_Button_Pin) == GPIO_PIN_RESET;
 }
 
 /* Helper function: Cycle to next mode */
 static void cycle_to_next_mode(void)
 {
     if (selected_mode == GAME_MODE_1) {
+
         selected_mode = GAME_MODE_2;
     } else if (selected_mode == GAME_MODE_2) {
+
+
         selected_mode = GAME_MODE_3;
     } else {
+
+
         selected_mode = GAME_MODE_1;
     }
     update_mode_leds();
@@ -121,7 +143,7 @@ void game_mode_selector_init(void)
     pb13_was_pressed = 0;
     initial_move_in_progress = 0;
     initial_move_phase = 0;
-    
+
     update_mode_leds();
     LOG_PRINT("Mode selector initialized. Select mode with PB12, confirm with PB13 (long-press 2s)\r\n");
 }
@@ -139,17 +161,22 @@ void game_mode_selector_update(void)
             /* Handle PB12 short click (mode cycling) */
             if (pb12_pressed && !pb12_was_pressed) {
                 pb12_was_pressed = 1;
+            	LOG_PRINT(" 2 \r\n");
+
                 current_state = MODE_SEL_SELECTING;
                 cycle_to_next_mode();
             }
             if (!pb12_pressed) {
                 pb12_was_pressed = 0;
+
             }
 
             /* Handle PB13 long-press (confirmation) */
             if (pb13_pressed && !pb13_was_pressed) {
                 pb13_was_pressed = 1;
                 button_press_start_time = now_ms;
+            	LOG_PRINT(" 1: \r\n");
+
             }
             if (pb13_pressed && pb13_was_pressed) {
                 if ((now_ms - button_press_start_time) >= LONG_PRESS_THRESHOLD_MS) {
@@ -161,6 +188,7 @@ void game_mode_selector_update(void)
             }
             if (!pb13_pressed) {
                 pb13_was_pressed = 0;
+
             }
             break;
 
@@ -313,7 +341,7 @@ void game_mode_selector_reset_for_new_round(void)
     pb13_was_pressed = 0;
     initial_move_in_progress = 0;
     initial_move_phase = 0;
-    
+
     turn_off_all_leds();
     update_mode_leds();
     LOG_PRINT("Mode selector reset for new round\r\n");
