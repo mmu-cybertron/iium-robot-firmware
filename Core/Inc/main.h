@@ -75,6 +75,10 @@ void Error_Handler(void);
 #define IR1_DO_Pin GPIO_PIN_10
 #define IR1_DO_GPIO_Port GPIOB
 #define IR1_DO_EXTI_IRQn EXTI15_10_IRQn
+#define Mode_Button_Pin GPIO_PIN_12
+#define Mode_Button_GPIO_Port GPIOB
+#define Confirm_Button_Pin GPIO_PIN_13
+#define Confirm_Button_GPIO_Port GPIOB
 #define LED_D6_Pin GPIO_PIN_14
 #define LED_D6_GPIO_Port GPIOB
 #define LED_D7_Pin GPIO_PIN_15
@@ -95,18 +99,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
    /* GPIO Pin definitions for buttons */
-#define MODE_PIN_PB12           GPIO_PIN_12
-#define MODE_PIN_GPIO_Port_PB12 GPIOB
-#define CONFIRM_PIN_PB13        GPIO_PIN_13
-#define CONFIRM_PIN_GPIO_Port_PB13 GPIOB
 
-/* GPIO Pin definitions for LEDs */
-#define MODE1_LED_PIN       GPIO_PIN_15
-#define MODE1_LED_GPIO_Port GPIOB
-#define MODE2_LED_PIN       GPIO_PIN_14
-#define MODE2_LED_GPIO_Port GPIOB
-#define MODE3_LED_PIN       GPIO_PIN_8
-#define MODE3_LED_GPIO_Port GPIOA
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

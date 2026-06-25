@@ -126,48 +126,81 @@ void app_main(void)
 
     LOG_PRINT("USART1 logging ready\r\n");
 
-    distance_sensor_init();
-
-    LOG_PRINT("Distance sensors initialized and ranging started\r\n");
-
-    // /* ===== MODE SELECTION LOOP (SM_Signal_Pin == RESET) ===== */
-    // LOG_PRINT("Waiting for mode selection (SM_Signal_Pin must be RESET)...\r\n");
-    // game_mode_selector_init();
-
-    // while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_RESET) {
-    //     /* Mode selection update - call regularly for button debouncing */
-    //     game_mode_selector_update();
-
-    //     /* Check if mode is locked and ready */
-    //     if (game_mode_selector_is_locked()) {
-    //         LOG_PRINT("Mode locked. Waiting for SM_Signal_Pin to go HIGH to start game...\r\n");
-    //         break;
-    //     }
-    // }
-
-    // /* ===== GAME LOOP (SM_Signal_Pin == SET) ===== */
-    // LOG_PRINT("SM_Signal_Pin is HIGH. Game starting!\r\n");
-    // LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
-    // HAL_GPIO_WritePin(LED_D8_GPIO_Port,LED_D8_Pin, GPIO_PIN_RESET);
+    /* Initialize core systems */
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
-    //edge_detector_init();
 
+    /* ===== PHASE 1 + PHASE 2: MODE SELECTION, THEN WAIT FOR START =====
+     * These two phases are wrapped in an outer loop because PB13's
+     * long-press can still unlock the mode while we're waiting for
+     * SM_Signal_Pin (Phase 2). If that happens, game_mode_selector_update()
+     * drives current_state back to MODE_SEL_IDLE, so
+     * game_mode_selector_is_locked() goes false again - in that case we
+     * jump back to mode selection instead of falling through to the game.
+     */
+    uint8_t mode_confirmed = 0;
 
-    // /* Execute initial move before state machine starts */
-    // while (!game_mode_selector_is_initial_move_done()) {
-    //     game_mode_selector_execute_initial_move();
-    //     motor_control_update();
+    while (!mode_confirmed) {
+        /* ----- PHASE 1: MODE SELECTION ----- */
+        LOG_PRINT("\n========================================\r\n");
+        LOG_PRINT("--- MODE SELECTION PHASE ---\r\n");
+        LOG_PRINT("========================================\r\n");
+        game_mode_selector_init();
 
-    //     const uint32_t now_ms = HAL_GetTick();
-    //     if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
-    //         last_update_ms = now_ms;
-    //         robot_background();
-    //     }
-    // }
+        /* Wait for mode to be selected and locked */
+        while (1) {
+            game_mode_selector_update();
 
-    // LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+            if (game_mode_selector_is_locked()) {
+                LOG_PRINT("Mode %d LOCKED. Ready to start.\r\n", (int)game_mode_selector_get_mode());
+                break;
+            }
 
+            /* Background tasks while selecting */
+            const uint32_t now_ms = HAL_GetTick();
+            if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+                last_update_ms = now_ms;
+                robot_background();
+            }
+        }
+
+        /* ----- PHASE 2: WAIT FOR SM_SIGNAL START ----- */
+        LOG_PRINT("\n--- WAITING FOR START SIGNAL ---\r\n");
+        LOG_PRINT("Waiting for SM_Signal_Pin HIGH to start game...\r\n");
+        LOG_PRINT("(Hold PB13 for 2s to unlock and re-select mode)\r\n");
+
+        while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+            /* Keep servicing the selector so PB13 long-press can unlock */
+            game_mode_selector_update();
+
+            if (!game_mode_selector_is_locked()) {
+                LOG_PRINT("Mode UNLOCKED. Returning to mode selection...\r\n");
+                break;
+            }
+
+            HAL_Delay(10);
+            robot_background();
+        }
+
+        if (game_mode_selector_is_locked()) {
+            mode_confirmed = 1;
+        }
+        /* else: loop back and re-run Phase 1 from scratch */
+    }
+
+    LOG_PRINT("SM_Signal_Pin HIGH! Game starting...\r\n");
+    last_update_ms = HAL_GetTick();
+
+    /* ===== PHASE 3: EXECUTE INITIAL MOVE ===== */
+    LOG_PRINT("\n--- INITIAL MOVE PHASE ---\r\n");
+    LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
+
+    while (!game_mode_selector_is_initial_move_done()) {
+        /* Call initial move executor */
+        game_mode_selector_execute_initial_move();
+
+        /* CRITICAL: Update motor PWM every iteration */
+        motor_control_update();
     /* Main game loop */
     while (1) {
     	curr_count = HAL_GetTick();
@@ -226,21 +259,32 @@ void app_main(void)
                 LOG_PRINT("SM_Signal_Pin LOW. Motors stopped.\r\n");
             }
 
-            if ((now_ms - last_wait_log_ms) >= 1000U) {
-                last_wait_log_ms = now_ms;
-                LOG_PRINT("Waiting for SM_Signal_Pin HIGH to run robot_update()\r\n");
-            }
-            robot_background();
-            continue;
-        }
-
-        robot_was_running = 1U;
-
+        /* Background tasks at regular intervals */
+        const uint32_t now_ms = HAL_GetTick();
         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
             last_update_ms = now_ms;
-            robot_update();
+            robot_background();
+        }
+    }
+
+    LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+    last_update_ms = HAL_GetTick();
+
+    /* ===== PHASE 4: MAIN GAME LOOP (STATE MACHINE) ===== */
+    LOG_PRINT("\n========================================\r\n");
+    LOG_PRINT("--- GAME LOOP PHASE ---\r\n");
+    LOG_PRINT("========================================\r\n");
+
+    while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_SET) {
+        const uint32_t now_ms = HAL_GetTick();
+
+        /* State machine and motor control at fixed interval */
+        if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+            last_update_ms = now_ms;
+            robot_update();  /* State machine runs here */
         }
 
+        /* Background tasks (sensor polling, etc.) */
         robot_background();
     }
 
