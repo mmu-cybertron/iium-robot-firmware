@@ -11,7 +11,7 @@
 #include "vesc/vescuart.h"
 
 #define EDGE_TEST 1
-#define OPPONENT_TEST 0
+#define OPPONENT_TEST 1
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -26,6 +26,7 @@ static uint32_t last_vesc_fault_poll_time = 0;
 static uint32_t vesc_fault_start_time = 0;
 static uint8_t is_escaping = 0;
 static uint8_t edge_mode = 0;
+static uint8_t escape_timer_started = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
 
@@ -141,28 +142,36 @@ void state_machine_update(void)
     {
     	current_time = HAL_GetTick();
 
-        if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
-        {
-            current_state = ROBOT_STATE_EDGE_ESCAPE;
-        }
-        else
-        {
-            // VescUart_SetCurrent(&vesc1, -10.0f);
-            // VescUart_SetCurrent(&vesc2, -10.0f);
-        	current_escape_mode = ROBOT_ESCAPE_NONE;
-            is_escaping = 0;
-            current_state = ROBOT_STATE_SEARCH;
-            //vesc_stop_all();
-            LOG_PRINT("Edge escape complete. VESC current stopped.\r\n");
+    	if (!escape_timer_started)
+    	{
+    		escape_start_time = current_time;
+    		escape_timer_started = 1;
+    	}
 
-            // run_once = 1;
-        }
-        // } else if (vesc_check_overcurrent_fault()) {
-        // vesc_fault_latched = 1U;
-        // vesc_fault_start_time = HAL_GetTick();
-        // current_state = ROBOT_STATE_FAULT;
-        // vesc_stop_all();
-    } 
+    	if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
+    	{
+    		current_state = ROBOT_STATE_EDGE_ESCAPE;
+    	}
+    	else
+    	{
+    		// VescUart_SetCurrent(&vesc1, -10.0f);
+    		// VescUart_SetCurrent(&vesc2, -10.0f);
+    		current_escape_mode = ROBOT_ESCAPE_NONE;
+    		is_escaping = 0;
+    		escape_timer_started = 0;
+    		current_state = ROBOT_STATE_SEARCH;
+    		//vesc_stop_all();
+    		LOG_PRINT("Edge escape complete. VESC current stopped.\r\n");
+
+    		// run_once = 1;
+    		}
+    	// } else if (vesc_check_overcurrent_fault()) {
+    	// vesc_fault_latched = 1U;
+    	// vesc_fault_start_time = HAL_GetTick();
+    	// current_state = ROBOT_STATE_FAULT;
+    	// vesc_stop_all();
+
+    }
 #endif
 #if OPPONENT_TEST
     else if (opponent.front)
@@ -183,7 +192,6 @@ void state_machine_update(void)
     switch (current_state)
     {
         
-
         #if EDGE_TEST
     case ROBOT_STATE_EDGE_ESCAPE:
         // motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
@@ -333,13 +341,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 	if (!is_escaping)
 	{
-		current_time = HAL_GetTick();
-
 		motor_control_stop();
 
 		is_escaping = 1;
 
-		escape_start_time = current_time;
 		// GPIO PIN 2 = RIGHT
 		// GPIO PIN 10 = LEFT
 		if (GPIO_Pin == GPIO_PIN_2)

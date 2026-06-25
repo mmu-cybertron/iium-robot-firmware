@@ -488,56 +488,56 @@ void distance_sensor_init(void)
 
 opponent_status_t distance_sensor_read_opponent(void)
 {
-//    uint16_t raw_left_mm = 0U, raw_front_mm = 0U, raw_right_mm = 0U;
-//    uint16_t left_mm = 0U, front_mm = 0U, right_mm = 0U;
-//    uint16_t rear_right_mm = 8191U, rear_left_mm = 8191U;
-//    uint16_t dummy = 0U;
-//    uint8_t failure_mask;
-//    uint8_t read_failed = 0U;
-//    const uint32_t now_ms = HAL_GetTick();
-//
-//    if (is_initialized == 0U) {
-//        distance_sensor_recover_vl53l1(1U);
-//        distance_sensor_update_debug_leds(&last_status);
-//        return last_status;
-//    }
-//
-//    if (((now_ms - vl53l1_last_poll_ms) < VL53L1_POLL_PERIOD_MS) &&
-//        (distance_sensor_has_all_cached_readings() != 0U)) {
-//        left_mm = vl53l1_cache[VL53L1_SENSOR_LEFT].distance_mm;
-//        front_mm = vl53l1_cache[VL53L1_SENSOR_FRONT].distance_mm;
-//        right_mm = vl53l1_cache[VL53L1_SENSOR_RIGHT].distance_mm;
-//    } else {
-//        vl53l1_last_poll_ms = now_ms;
-//        failure_mask = VL53L1__ReadAll(&raw_left_mm, &raw_front_mm, &raw_right_mm, &dummy, &dummy);
-//        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_LEFT,
-//                                                   failure_mask,
-//                                                   VL53L1_FAILURE_LEFT,
-//                                                   raw_left_mm,
-//                                                   now_ms,
-//                                                   &left_mm);
-//        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_FRONT,
-//                                                   failure_mask,
-//                                                   VL53L1_FAILURE_FRONT,
-//                                                   raw_front_mm,
-//                                                   now_ms,
-//                                                   &front_mm);
-//        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_RIGHT,
-//                                                   failure_mask,
-//                                                   VL53L1_FAILURE_RIGHT,
-//                                                   raw_right_mm,
-//                                                   now_ms,
-//                                                   &right_mm);
-//
-//        if ((failure_mask & VL53L1_FAILURE_ALL) == VL53L1_FAILURE_ALL) {
-//            distance_sensor_recover_vl53l1(1U);
-//        } else if ((vl53l1_cache[VL53L1_SENSOR_LEFT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
-//                   (vl53l1_cache[VL53L1_SENSOR_FRONT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
-//                   (vl53l1_cache[VL53L1_SENSOR_RIGHT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD)) {
-//            distance_sensor_recover_vl53l1(0U);
-//        }
-//    }
-//
+    uint16_t raw_left_mm = 0U, raw_front_mm = 0U, raw_right_mm = 0U;
+    uint16_t left_mm = 0U, front_mm = 0U, right_mm = 0U;
+    uint16_t rear_right_mm = 8191U, rear_left_mm = 8191U;
+    uint16_t dummy = 0U;
+    uint8_t failure_mask;
+    uint8_t read_failed = 0U;
+    const uint32_t now_ms = HAL_GetTick();
+
+    if (is_initialized == 0U) {
+        distance_sensor_recover_vl53l1(1U);
+        distance_sensor_update_debug_leds(&last_status);
+        return last_status;
+    }
+
+    if (((now_ms - vl53l1_last_poll_ms) < VL53L1_POLL_PERIOD_MS) &&
+        (distance_sensor_has_all_cached_readings() != 0U)) {
+        left_mm = vl53l1_cache[VL53L1_SENSOR_LEFT].distance_mm;
+        front_mm = vl53l1_cache[VL53L1_SENSOR_FRONT].distance_mm;
+        right_mm = vl53l1_cache[VL53L1_SENSOR_RIGHT].distance_mm;
+    } else {
+        vl53l1_last_poll_ms = now_ms;
+        failure_mask = VL53L1__ReadAll(&raw_left_mm, &raw_front_mm, &raw_right_mm, &dummy, &dummy);
+        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_LEFT,
+                                                   failure_mask,
+                                                   VL53L1_FAILURE_LEFT,
+                                                   raw_left_mm,
+                                                   now_ms,
+                                                   &left_mm);
+        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_FRONT,
+                                                   failure_mask,
+                                                   VL53L1_FAILURE_FRONT,
+                                                   raw_front_mm,
+                                                   now_ms,
+                                                   &front_mm);
+        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_RIGHT,
+                                                   failure_mask,
+                                                   VL53L1_FAILURE_RIGHT,
+                                                   raw_right_mm,
+                                                   now_ms,
+                                                   &right_mm);
+
+        if ((failure_mask & VL53L1_FAILURE_ALL) == VL53L1_FAILURE_ALL) {
+            distance_sensor_recover_vl53l1(1U);
+        } else if ((vl53l1_cache[VL53L1_SENSOR_LEFT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
+                   (vl53l1_cache[VL53L1_SENSOR_FRONT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
+                   (vl53l1_cache[VL53L1_SENSOR_RIGHT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD)) {
+            distance_sensor_recover_vl53l1(0U);
+        }
+    }
+
 //#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
 //    rear_right_mm = vl53l0x_read_distance(rear_right_handle);
 //    rear_left_mm = vl53l0x_read_distance(rear_left_handle);
@@ -559,14 +559,6 @@ opponent_status_t distance_sensor_read_opponent(void)
 //    distance_sensor_update_debug_leds(&last_status);
 //
 //    return last_status;
-
-	 uint16_t left_mm = 8191U, front_mm = 8191U, right_mm = 8191U;
-	    uint16_t rear_right_mm = 8191U, rear_left_mm = 8191U;
-	    uint16_t dummy = 0U;
-
-	    if (is_initialized == 0U) {
-	        return last_status;
-	    }
 
 	    // 1. Read L1X (Front, Left, Right)
 	    (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
