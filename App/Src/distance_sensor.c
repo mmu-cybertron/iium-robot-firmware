@@ -10,37 +10,9 @@
 extern I2C_HandleTypeDef hi2c1;
 
 #define DISTANCE_SENSOR_ENABLE_REAR_VL53L0X 0
-#define VL53L1_FAILURE_LEFT                 0x01U
-#define VL53L1_FAILURE_FRONT                0x02U
-#define VL53L1_FAILURE_RIGHT                0x04U
-#define VL53L1_FAILURE_ALL                  (VL53L1_FAILURE_LEFT | \
-                                             VL53L1_FAILURE_FRONT | \
-                                             VL53L1_FAILURE_RIGHT)
-#define VL53L1_FAILURE_RECOVERY_THRESHOLD   3U
-#define VL53L1_STALE_HOLD_MS                250U
-#define VL53L1_I2C_RECOVERY_CLOCK_PULSES    9U
-#define VL53L1_POLL_PERIOD_MS               VL53L1__INTERMEASUREMENT
 
 static uint8_t is_initialized;
 opponent_status_t last_status;
-
-typedef enum {
-    VL53L1_SENSOR_LEFT = 0,
-    VL53L1_SENSOR_FRONT,
-    VL53L1_SENSOR_RIGHT,
-    VL53L1_SENSOR_COUNT
-} vl53l1_sensor_index_t;
-
-typedef struct {
-    uint16_t distance_mm;
-    uint32_t updated_ms;
-    uint8_t has_value;
-    uint8_t consecutive_failures;
-} vl53l1_sensor_cache_t;
-
-static vl53l1_sensor_cache_t vl53l1_cache[VL53L1_SENSOR_COUNT];
-static uint8_t vl53l1_fault_active;
-static uint32_t vl53l1_last_poll_ms;
 
 #if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
 static VL53L0X_Dev_t rear_right_device;
@@ -203,15 +175,13 @@ static void distance_sensor_update_debug_leds(const opponent_status_t *status)
 {
     HAL_GPIO_WritePin(LED_D6_GPIO_Port,
                       LED_D6_Pin,
+                      status->left ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+                      LED_D7_Pin,
                       status->front ? GPIO_PIN_SET : GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LED_D8_GPIO_Port,
                       LED_D8_Pin,
-                      vl53l1_fault_active ? GPIO_PIN_SET : GPIO_PIN_RESET);
-}
-
-static void distance_sensor_signal_recovery(void)
-{
-    HAL_GPIO_TogglePin(LED_D7_GPIO_Port, LED_D7_Pin);
+                      status->right ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 static uint16_t nearest_valid_distance(uint16_t left_mm,
@@ -246,6 +216,15 @@ static uint8_t distance_sensor_start_vl53l1(void)
 {
     uint8_t success_count = 0U;
 
+    last_status.front = 0U;
+    last_status.left = 0U;
+    last_status.right = 0U;
+    last_status.rear_right = 0U;
+    last_status.rear_left = 0U;
+    last_status.distance_mm = 0U;
+    distance_sensor_update_debug_leds(&last_status);
+
+    // 2. Initialize VL53L1X (XSHUT1, XSHUT2, XSHUT3) safely
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
     HAL_Delay(20U);
 
@@ -436,47 +415,11 @@ opponent_status_t distance_sensor_read_opponent(void)
     const uint32_t now_ms = HAL_GetTick();
 
     if (is_initialized == 0U) {
-        distance_sensor_recover_vl53l1(1U);
         distance_sensor_update_debug_leds(&last_status);
         return last_status;
     }
 
-    if (((now_ms - vl53l1_last_poll_ms) < VL53L1_POLL_PERIOD_MS) &&
-        (distance_sensor_has_all_cached_readings() != 0U)) {
-        left_mm = vl53l1_cache[VL53L1_SENSOR_LEFT].distance_mm;
-        front_mm = vl53l1_cache[VL53L1_SENSOR_FRONT].distance_mm;
-        right_mm = vl53l1_cache[VL53L1_SENSOR_RIGHT].distance_mm;
-    } else {
-        vl53l1_last_poll_ms = now_ms;
-        failure_mask = VL53L1__ReadAll(&raw_left_mm, &raw_front_mm, &raw_right_mm, &dummy, &dummy);
-        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_LEFT,
-                                                   failure_mask,
-                                                   VL53L1_FAILURE_LEFT,
-                                                   raw_left_mm,
-                                                   now_ms,
-                                                   &left_mm);
-        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_FRONT,
-                                                   failure_mask,
-                                                   VL53L1_FAILURE_FRONT,
-                                                   raw_front_mm,
-                                                   now_ms,
-                                                   &front_mm);
-        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_RIGHT,
-                                                   failure_mask,
-                                                   VL53L1_FAILURE_RIGHT,
-                                                   raw_right_mm,
-                                                   now_ms,
-                                                   &right_mm);
-
-        if ((failure_mask & VL53L1_FAILURE_ALL) == VL53L1_FAILURE_ALL) {
-            distance_sensor_recover_vl53l1(1U);
-        } else if ((vl53l1_cache[VL53L1_SENSOR_LEFT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
-                   (vl53l1_cache[VL53L1_SENSOR_FRONT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
-                   (vl53l1_cache[VL53L1_SENSOR_RIGHT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD)) {
-            distance_sensor_recover_vl53l1(0U);
-        }
-    }
-
+    (void)VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
 #if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
     rear_right_mm = vl53l0x_read_distance(rear_right_handle);
     rear_left_mm = vl53l0x_read_distance(rear_left_handle);
@@ -491,6 +434,7 @@ opponent_status_t distance_sensor_read_opponent(void)
     last_status.rear_right = is_valid_target(rear_right_mm);
     last_status.rear_left = is_valid_target(rear_left_mm);
     last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, rear_right_mm, rear_left_mm);
+    distance_sensor_update_debug_leds(&last_status);
 
     if (read_failed == 0U) {
         vl53l1_fault_active = 0U;
