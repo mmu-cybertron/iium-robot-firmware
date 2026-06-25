@@ -122,6 +122,7 @@ void app_main(void)
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
 
+#if ROBOT_GAME_MODE_SELECTOR_ENABLE
     /* ===== PHASE 1 + PHASE 2: MODE SELECTION, THEN WAIT FOR START =====
      * These two phases are wrapped in an outer loop because PB13's
      * long-press can still unlock the mode while we're waiting for
@@ -197,6 +198,18 @@ void app_main(void)
 
     LOG_PRINT("Initial move complete. Entering state machine...\r\n");
     last_update_ms = HAL_GetTick();
+#else
+    LOG_PRINT("\n--- WAITING FOR START SIGNAL ---\r\n");
+    LOG_PRINT("Game-mode selector disabled. Waiting for SM_Signal_Pin HIGH...\r\n");
+
+    while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+        HAL_Delay(10);
+        robot_background();
+    }
+
+    LOG_PRINT("SM_Signal_Pin HIGH! Game starting...\r\n");
+    last_update_ms = HAL_GetTick();
+#endif
 
     /* ===== PHASE 4: MAIN GAME LOOP (STATE MACHINE) ===== */
     LOG_PRINT("\n========================================\r\n");
@@ -239,7 +252,9 @@ void app_main(void)
     /* ===== PHASE 5: CLEANUP FOR NEXT ROUND ===== */
     LOG_PRINT("\n--- CLEANUP PHASE ---\r\n");
     motor_control_stop();
+#if ROBOT_GAME_MODE_SELECTOR_ENABLE
     game_mode_selector_reset_for_new_round();
+#endif
 
     LOG_PRINT("Reset complete. Ready for next round.\r\n");
 }
