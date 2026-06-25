@@ -112,17 +112,9 @@ int __io_getchar(void)
 
 #endif /* ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE */
 
-uint32_t last_count, curr_count, delta_count;
-
-
 void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
-    uint32_t last_wait_log_ms = HAL_GetTick();
-#if ROBOT_ACTIVE_MODE != ROBOT_MODE_LOGGING_ENABLE
-    uint32_t last_tof_led_update_ms = HAL_GetTick();
-#endif
-    uint8_t robot_was_running = 0U;
 
     LOG_PRINT("USART1 logging ready\r\n");
 
@@ -201,70 +193,6 @@ void app_main(void)
 
         /* CRITICAL: Update motor PWM every iteration */
         motor_control_update();
-    /* Main game loop */
-    while (1) {
-    	curr_count = HAL_GetTick();
-    	delta_count = curr_count - last_count;
-    	last_count = curr_count;
-        const uint32_t now_ms = HAL_GetTick();
-
-        #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
-            static uint32_t last_sensor_led_update_ms = 0U;
-            if ((now_ms - last_sensor_led_update_ms) >= 50U) {
-                last_sensor_led_update_ms = now_ms;
-                (void)distance_sensor_read_opponent();
-            }
-        #endif
-
-
-            const opponent_status_t tofData = distance_sensor_read_opponent();
-
-            // Log all sensors periodically (every 200ms to avoid flooding UART)
-            static uint32_t last_sensor_log_ms = 0U;
-            if ((now_ms - last_sensor_log_ms) >= 200U) {
-                last_sensor_log_ms = now_ms;
-                LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
-                          (int)tofData.front,
-                          (int)tofData.left,
-                          (int)tofData.right,
-                          (int)tofData.rear_right,
-                          (int)tofData.rear_left,
-                          (unsigned int)tofData.distance_mm);
-            }
-
-//		edge_detector_update();
-//
-//		 if (edge_detector_is_edge_detected())
-//		    {
-//
-//		        motor_control_stop();
-//
-//		        LOG_PRINT("EDGE DETECTED!\r\n");
-//
-//		        robot_background();
-//		        continue;
-//		    }
-
-        if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
-            #if ROBOT_ACTIVE_MODE != ROBOT_MODE_LOGGING_ENABLE
-            if ((now_ms - last_tof_led_update_ms) >= 100U) {
-                last_tof_led_update_ms = now_ms;
-                (void)distance_sensor_read_opponent();
-            }
-            #endif
-
-            if (robot_was_running) {
-                robot_was_running = 0U;
-                motor_control_stop();
-                LOG_PRINT("SM_Signal_Pin LOW. Motors stopped.\r\n");
-            }
-
-        /* Background tasks at regular intervals */
-        const uint32_t now_ms = HAL_GetTick();
-        if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
-            last_update_ms = now_ms;
-            robot_background();
-        }
     }
 
     LOG_PRINT("Initial move complete. Entering state machine...\r\n");
@@ -278,6 +206,22 @@ void app_main(void)
     while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_SET) {
         const uint32_t now_ms = HAL_GetTick();
 
+#if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
+        const opponent_status_t tofData = distance_sensor_read_opponent();
+        static uint32_t last_sensor_log_ms = 0U;
+
+        if ((now_ms - last_sensor_log_ms) >= 200U) {
+            last_sensor_log_ms = now_ms;
+            LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                      (int)tofData.front,
+                      (int)tofData.left,
+                      (int)tofData.right,
+                      (int)tofData.rear_right,
+                      (int)tofData.rear_left,
+                      (unsigned int)tofData.distance_mm);
+        }
+#endif
+
         /* State machine and motor control at fixed interval */
         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
             last_update_ms = now_ms;
@@ -290,12 +234,13 @@ void app_main(void)
 
 
 
-    // /* Game ended, reset for next round */
-    // LOG_PRINT("SM_Signal_Pin went LOW. Round ended.\r\n");
-    // game_mode_selector_reset_for_new_round();
-    // motor_control_stop();
-    
-    // /* Loop back to mode selection for next round */
-    // app_main();
+    LOG_PRINT("\nSM_Signal_Pin went LOW. Round ended.\r\n");
+
+    /* ===== PHASE 5: CLEANUP FOR NEXT ROUND ===== */
+    LOG_PRINT("\n--- CLEANUP PHASE ---\r\n");
+    motor_control_stop();
+    game_mode_selector_reset_for_new_round();
+
+    LOG_PRINT("Reset complete. Ready for next round.\r\n");
 }
 
