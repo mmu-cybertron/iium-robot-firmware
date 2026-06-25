@@ -1,6 +1,7 @@
 #include "state_machine.h"
 
 #include "edge_detector.h"
+#include "distance_sensor.h"
 #include "failsafe.h"
 #include "motor_control.h"
 #include "motion.h"
@@ -100,6 +101,7 @@ void state_machine_init(void)
 void state_machine_update(void)
 {
     const opponent_status_t opponent = opponent_tracker_get_status();
+    const edge_status_t edge = edge_detector_get_status();
 
     if (failsafe_is_faulted())
     {

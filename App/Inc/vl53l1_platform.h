@@ -235,5 +235,5 @@ int8_t VL53L1_WaitMs(
 
 uint8_t VL53L1__InitAll(void);
 uint8_t VL53L1__ReadAll(uint16_t *left, uint16_t *front, uint16_t *right, uint16_t *rearright, uint16_t *rearleft);
-uint16_t VL53L1__ReadOne(uint16_t addr);
+uint8_t VL53L1__ReadOne(uint16_t addr, uint16_t *distance_mm);
 #endif

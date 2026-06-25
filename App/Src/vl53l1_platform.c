@@ -342,24 +342,38 @@ uint8_t VL53L1__InitAll(void) {
  * @brief  Read distance from one sensor using I2C polling.
  *         No GPIO interrupt pin needed.
  *************************************************************/
- uint16_t VL53L1__ReadOne(uint16_t addr) {
+ uint8_t VL53L1__ReadOne(uint16_t addr, uint16_t *distance_mm) {
+    if (distance_mm == NULL) {
+        return 1U;
+    }
+
     uint8_t  dataReady = 0;
     uint32_t t = HAL_GetTick();
 
     while (!dataReady) {
-        VL53L1X_CheckForDataReady(addr, &dataReady);
-        if ((HAL_GetTick() - t) > 100) return 0; // timeout
+        if (VL53L1X_CheckForDataReady(addr, &dataReady) != 0) {
+            return 1U;
+        }
+        if ((HAL_GetTick() - t) > 15U) {
+            return 1U;
+        }
         HAL_Delay(1);
     }
 
     uint8_t  rangeStatus;
     uint16_t distance;
-    VL53L1X_GetRangeStatus(addr, &rangeStatus);
-    VL53L1X_GetDistance(addr, &distance);
-    VL53L1X_ClearInterrupt(addr);
+    uint8_t status = 0U;
 
-    if (rangeStatus > VL53L1__RANGE_STATUS_THRESH) return 0;
-    return distance;
+    status |= VL53L1X_GetRangeStatus(addr, &rangeStatus);
+    status |= VL53L1X_GetDistance(addr, &distance);
+    status |= VL53L1X_ClearInterrupt(addr);
+
+    if ((status != 0U) || (rangeStatus > VL53L1__RANGE_STATUS_THRESH)) {
+        return 1U;
+    }
+
+    *distance_mm = distance;
+    return 0U;
 }
 
 /*************************************************************
@@ -368,12 +382,20 @@ uint8_t VL53L1__InitAll(void) {
  *************************************************************/
  uint8_t VL53L1__ReadAll(uint16_t *left, uint16_t *front, uint16_t *right,
                          uint16_t *rearright, uint16_t *rearleft) {
-    *left  = VL53L1__ReadOne(VL53L1__ADDR_LEFT);
-    *front = VL53L1__ReadOne(VL53L1__ADDR_FRONT);
-    *right = VL53L1__ReadOne(VL53L1__ADDR);
+    uint8_t failure_mask = 0U;
+
+    if (VL53L1__ReadOne(VL53L1__ADDR_LEFT, left) != 0U) {
+        failure_mask |= 0x01U;
+    }
+    if (VL53L1__ReadOne(VL53L1__ADDR_FRONT, front) != 0U) {
+        failure_mask |= 0x02U;
+    }
+    if (VL53L1__ReadOne(VL53L1__ADDR, right) != 0U) {
+        failure_mask |= 0x04U;
+    }
 //    *rearright   = VL53L1__ReadOne(VL53L1__ADDR_REARRIGHT);    // NEW
 //    *rearleft = VL53L1__ReadOne(VL53L1__ADDR_REARLEFT);
     //
     //
-    return 0;
+    return failure_mask;
 }

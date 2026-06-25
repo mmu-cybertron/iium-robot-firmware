@@ -16,6 +16,15 @@ typedef enum {
 } robot_state_t;
 
 typedef enum {
+    ROBOT_ESCAPE_FRONT = 0,
+    ROBOT_ESCAPE_BACK,
+    ROBOT_ESCAPE_LEFT,
+    ROBOT_ESCAPE_RIGHT,
+    ROBOT_ESCAPE_NONE
+
+} robot_edge_escape_mode_t;
+
+typedef enum {
     DIRECTION_STOP = 0,
     DIRECTION_FORWARD,
     DIRECTION_REVERSE,
