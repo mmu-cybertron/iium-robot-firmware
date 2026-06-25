@@ -19,7 +19,7 @@ void robot_init(void)
     motor_control_init();
     HAL_Delay(1000);
     edge_detector_init();
-    opponent_tracker_init();
+    //opponent_tracker_init();
     failsafe_init();
     state_machine_init();
     //vl53l0x_init_rear_sensors();
@@ -98,7 +98,7 @@ void robot_update(void)
 
     edge_detector_update();
 
-    opponent_tracker_update();
+    //opponent_tracker_update();
     
     state_machine_update();
 

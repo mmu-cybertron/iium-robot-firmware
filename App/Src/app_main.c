@@ -112,6 +112,9 @@ int __io_getchar(void)
 
 #endif /* ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE */
 
+uint32_t last_count, curr_count, delta_count;
+
+
 void app_main(void)
 {
     uint32_t last_update_ms = HAL_GetTick();
@@ -167,6 +170,9 @@ void app_main(void)
 
     /* Main game loop */
     while (1) {
+    	curr_count = HAL_GetTick();
+    	delta_count = curr_count - last_count;
+    	last_count = curr_count;
         const uint32_t now_ms = HAL_GetTick();
 
         #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE

@@ -10,13 +10,13 @@
 #include "usart1_log.h"
 #include "vesc/vescuart.h"
 
-#define EDGE_TEST 0
+#define EDGE_TEST 1
 #define OPPONENT_TEST 0
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-#define EDGE_ESCAPE_DURATION_MS 500U
+#define EDGE_ESCAPE_DURATION_MS 1000U
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
@@ -146,14 +146,14 @@ void state_machine_update(void)
             vesc_stop_all();
         }
 
-        if (edge.front_right && edge.rear_right) {
-            current_escape_mode = ROBOT_ESCAPE_LEFT;
-        } else if (edge.front_left && edge.rear_left) {
-            current_escape_mode = ROBOT_ESCAPE_RIGHT;
-        } else if (edge.front_left || edge.front_right) {
-         	current_escape_mode = ROBOT_ESCAPE_BACK;
-        } else if (edge.rear_left || edge.rear_right) {
-            current_escape_mode = ROBOT_ESCAPE_FRONT;
+        if (edge.front_right ) {
+            current_escape_mode = ROBOT_ESCAPE_BACK_LEFT;
+        } else if (edge.front_left) {
+            current_escape_mode = ROBOT_ESCAPE_BACK_RIGHT;
+//        } else if (edge.rear_left) {
+//         	current_escape_mode = ROBOT_ESCAPE_RIGHT;
+//        } else if (edge.rear_right) {
+//            current_escape_mode = ROBOT_ESCAPE_LEFT;
         }
 
         if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
@@ -218,15 +218,27 @@ void state_machine_update(void)
             case ROBOT_ESCAPE_FRONT:
                 motor_control_set_pwm(2250, 2250);
                 break;
-            case ROBOT_ESCAPE_LEFT:
-                motor_control_set_pwm(1600, 2200);
+            case ROBOT_ESCAPE_BACK_LEFT:
+                motor_control_set_pwm(1000, 1500);
+                HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+                        		LED_D8_Pin,
+                				GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+                        		LED_D6_Pin,
+                				GPIO_PIN_SET);
                 break;
-            case ROBOT_ESCAPE_RIGHT:
-                motor_control_set_pwm(2200, 1600);
+            case ROBOT_ESCAPE_BACK_RIGHT:
+                motor_control_set_pwm(1500, 1000);
+                HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+                        		LED_D8_Pin,
+                				GPIO_PIN_SET);
+                HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+                        		LED_D6_Pin,
+                				GPIO_PIN_RESET);
                 break;
             case ROBOT_ESCAPE_NONE:
             default:
-            	motor_control_stop;
+            	motor_control_stop();
                 break;
         }
 
@@ -257,7 +269,7 @@ void state_machine_update(void)
     case ROBOT_STATE_SEARCH:
         if (opponent.left)
         {
-            // motor_control_set_command(motion_rotate_left(ROBOT_TRACK_PWM));
+            // motor_control_set_command(motion_rotate_foward(ROBOT_TRACK_PWM));
 
         	motor_control_set_pwm(1600, 1950);
             //LOG_PRINT("Opponent on the left! Rotating left\n");
