@@ -11,7 +11,7 @@
 #include "vesc/vescuart.h"
 
 #define EDGE_TEST 1
-#define OPPONENT_TEST 1
+#define OPPONENT_TEST 0
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
