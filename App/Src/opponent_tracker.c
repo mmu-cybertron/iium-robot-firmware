@@ -8,6 +8,7 @@ static opponent_status_t current_opponent;
 void opponent_tracker_init(void)
 {
     distance_sensor_init();
+
     current_opponent = distance_sensor_read_opponent();
 }
 

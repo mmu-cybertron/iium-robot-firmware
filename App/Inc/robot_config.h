@@ -22,4 +22,7 @@
 
 #define ROBOT_ACTIVE_MODE ROBOT_MODE_RUN
 
+/* Set to 0U to skip game-mode selection and initial-move execution. */
+#define ROBOT_GAME_MODE_SELECTOR_ENABLE 0U
+
 #endif /* ROBOT_CONFIG_H */
