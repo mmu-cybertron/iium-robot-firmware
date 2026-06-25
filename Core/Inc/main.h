@@ -71,8 +71,10 @@ void Error_Handler(void);
 #define IR3_DO_GPIO_Port GPIOB
 #define IR2_DO_Pin GPIO_PIN_2
 #define IR2_DO_GPIO_Port GPIOB
+#define IR2_DO_EXTI_IRQn EXTI2_IRQn
 #define IR1_DO_Pin GPIO_PIN_10
 #define IR1_DO_GPIO_Port GPIOB
+#define IR1_DO_EXTI_IRQn EXTI15_10_IRQn
 #define LED_D6_Pin GPIO_PIN_14
 #define LED_D6_GPIO_Port GPIOB
 #define LED_D7_Pin GPIO_PIN_15

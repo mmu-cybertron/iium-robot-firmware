@@ -16,10 +16,11 @@
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-#define EDGE_ESCAPE_DURATION_MS 1000U
+#define EDGE_ESCAPE_DURATION_MS 500U
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
+static uint32_t current_time = 0;
 static uint32_t escape_start_time = 0;
 static uint32_t last_vesc_fault_poll_time = 0;
 static uint32_t vesc_fault_start_time = 0;
@@ -136,27 +137,9 @@ void state_machine_update(void)
         //     }
 //    }
 #if EDGE_TEST
-    else if (edge_detector_is_edge_detected() || is_escaping)
+    else if (is_escaping)
     {
-        
-        uint32_t current_time = HAL_GetTick();
-
-        if (!is_escaping)
-        {
-            escape_start_time = current_time;
-            is_escaping = 1;
-            vesc_stop_all();
-        }
-
-        if (edge.front_right ) {
-            current_escape_mode = ROBOT_ESCAPE_BACK_LEFT;
-        } else if (edge.front_left) {
-            current_escape_mode = ROBOT_ESCAPE_BACK_RIGHT;
-//        } else if (edge.rear_left) {
-//         	current_escape_mode = ROBOT_ESCAPE_RIGHT;
-//        } else if (edge.rear_right) {
-//            current_escape_mode = ROBOT_ESCAPE_LEFT;
-        }
+    	current_time = HAL_GetTick();
 
         if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
         {
@@ -179,8 +162,6 @@ void state_machine_update(void)
         // vesc_fault_start_time = HAL_GetTick();
         // current_state = ROBOT_STATE_FAULT;
         // vesc_stop_all();
-
-       
     } 
 #endif
 #if OPPONENT_TEST
@@ -222,21 +203,9 @@ void state_machine_update(void)
                 break;
             case ROBOT_ESCAPE_BACK_LEFT:
                 motor_control_set_pwm(1000, 1500);
-                HAL_GPIO_WritePin(LED_D8_GPIO_Port,
-                        		LED_D8_Pin,
-                				GPIO_PIN_RESET);
-                HAL_GPIO_WritePin(LED_D6_GPIO_Port,
-                        		LED_D6_Pin,
-                				GPIO_PIN_SET);
                 break;
             case ROBOT_ESCAPE_BACK_RIGHT:
                 motor_control_set_pwm(1500, 1000);
-                HAL_GPIO_WritePin(LED_D8_GPIO_Port,
-                        		LED_D8_Pin,
-                				GPIO_PIN_SET);
-                HAL_GPIO_WritePin(LED_D6_GPIO_Port,
-                        		LED_D6_Pin,
-                				GPIO_PIN_RESET);
                 break;
             case ROBOT_ESCAPE_NONE:
             default:
@@ -360,3 +329,40 @@ robot_state_t state_machine_get_state(void)
     return current_state;
 }
  
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+
+	if (!is_escaping)
+	{
+		current_time = HAL_GetTick();
+
+		motor_control_stop();
+
+		is_escaping = 1;
+
+		escape_start_time = current_time;
+		// GPIO PIN 2 = RIGHT
+		// GPIO PIN 10 = LEFT
+		if (GPIO_Pin == GPIO_PIN_2)
+		{
+			current_escape_mode = ROBOT_ESCAPE_BACK_LEFT;
+
+		}
+		else if (GPIO_Pin == GPIO_PIN_10)
+		{
+			current_escape_mode = ROBOT_ESCAPE_BACK_RIGHT;
+
+		}
+
+		switch (current_escape_mode)
+		{
+		case ROBOT_ESCAPE_BACK_LEFT:
+			motor_control_set_pwm(1000, 1500);
+			break;
+		case ROBOT_ESCAPE_BACK_RIGHT:
+			motor_control_set_pwm(1500, 1000);
+			break;
+		default:
+			break;
+		}
+	}
+}

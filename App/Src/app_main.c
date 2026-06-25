@@ -244,6 +244,8 @@ void app_main(void)
         robot_background();
     }
 
+
+
     // /* Game ended, reset for next round */
     // LOG_PRINT("SM_Signal_Pin went LOW. Round ended.\r\n");
     // game_mode_selector_reset_for_new_round();
@@ -252,3 +254,4 @@ void app_main(void)
     // /* Loop back to mode selection for next round */
     // app_main();
 }
+
