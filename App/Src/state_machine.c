@@ -108,6 +108,8 @@ void state_machine_update(void)
     const opponent_status_t opponent = opponent_tracker_get_status();
     const edge_status_t edge = edge_detector_get_status();
 
+    //TOF_debug();
+
     if (failsafe_is_faulted())
     {
         current_state = ROBOT_STATE_FAULT;
@@ -186,7 +188,7 @@ void state_machine_update(void)
     {
         current_state = ROBOT_STATE_ATTACK;
     }
-    else if (opponent.left || opponent.right)
+    else if (opponent.left || opponent.right || opponent.rear_left || opponent.rear_right)
     {
         current_state = ROBOT_STATE_SEARCH;
     }
@@ -301,6 +303,14 @@ void state_machine_update(void)
             HAL_GPIO_WritePin(LED_D8_GPIO_Port,
             		LED_D8_Pin,
 					GPIO_PIN_RESET);
+        }
+        else if (opponent.rear_left)
+        {
+        	motor_control_set_pwm(2250, 900);
+        }
+        else if (opponent.rear_right)
+        {
+        	motor_control_set_pwm(900, 2250);
         }
         else
         {
