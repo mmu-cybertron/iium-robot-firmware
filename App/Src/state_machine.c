@@ -337,7 +337,7 @@ void state_machine_update(void)
         break;
     #else 
     case ROBOT_STATE_SEARCH:
-        motor_control_set_pwm(1750, 1750);
+        motor_control_set_pwm(1900, 1900);
         break;
     #endif
 
