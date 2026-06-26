@@ -18,8 +18,8 @@ void robot_init(void)
     
     motor_control_init();
     HAL_Delay(1000);
-    edge_detector_init();
-    //opponent_tracker_init();
+    //edge_detector_init();
+    opponent_tracker_init();
     failsafe_init();
     state_machine_init();
 
@@ -95,9 +95,9 @@ void robot_update(void)
     	return;
     }
 
-    edge_detector_update();
+    //edge_detector_update();
 
-    //opponent_tracker_update();
+    opponent_tracker_update();
     
     state_machine_update();
 

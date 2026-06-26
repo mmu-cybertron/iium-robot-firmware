@@ -10,8 +10,8 @@
 #include "usart1_log.h"
 #include "vesc/vescuart.h"
 
-#define EDGE_TEST 1
-#define OPPONENT_TEST 0
+#define EDGE_TEST 0
+#define OPPONENT_TEST 1
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -250,7 +250,7 @@ void state_machine_update(void)
         {
             // motor_control_set_command(motion_rotate_foward(ROBOT_TRACK_PWM));
 
-        	motor_control_set_pwm(1600, 1950);
+        	motor_control_set_pwm(1600, 1850);
             //LOG_PRINT("Opponent on the left! Rotating left\n");
 
             HAL_GPIO_WritePin(LED_D6_GPIO_Port,
@@ -269,7 +269,7 @@ void state_machine_update(void)
         {
             //motor_control_set_command(motion_rotate_right(ROBOT_TRACK_PWM));
 
-        	motor_control_set_pwm(1950, 1600);
+        	motor_control_set_pwm(1850, 1600);
             //LOG_PRINT("Opponent on the right! Rotating right\n");
             HAL_GPIO_WritePin(LED_D6_GPIO_Port,
             		LED_D6_Pin,
@@ -283,11 +283,11 @@ void state_machine_update(void)
         }
         else if (opponent.rear_left)
         {
-        	motor_control_set_pwm(2250, 900);
+        	motor_control_set_pwm(1850, 1150);
         }
         else if (opponent.rear_right)
         {
-        	motor_control_set_pwm(900, 2250);
+        	motor_control_set_pwm(1150, 1850);
         }
         else
         {
