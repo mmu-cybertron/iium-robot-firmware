@@ -18,7 +18,6 @@ extern UART_HandleTypeDef huart2;
 
 #define EDGE_ESCAPE_DURATION_MS 1000U
 #define EDGE_ESCAPE_BACKUP_MS 600U
-#define IR_EDGE_DEBOUNCE_MS 5U
 #define IR1_EDGE_TEST_ENABLE 0
 #define IR2_EDGE_TEST_ENABLE 0
 #define IR1_EDGE_DETECTED_STATE GPIO_PIN_RESET
@@ -69,30 +68,6 @@ static void edge_escape_begin(robot_edge_escape_mode_t escape_mode)
 	edge_debug_show_accepted();
 }
 
-static void edge_process_interrupt_candidate(volatile uint8_t *pending,
-											 uint32_t interrupt_time_ms,
-											 GPIO_TypeDef *gpio_port,
-											 uint16_t gpio_pin,
-											 GPIO_PinState detected_state,
-											 robot_edge_escape_mode_t escape_mode)
-{
-	if (*pending == 0U)
-	{
-		return;
-	}
-
-	if ((HAL_GetTick() - interrupt_time_ms) < IR_EDGE_DEBOUNCE_MS)
-	{
-		return;
-	}
-
-	*pending = 0U;
-
-	if (HAL_GPIO_ReadPin(gpio_port, gpio_pin) == detected_state)
-	{
-		edge_escape_begin(escape_mode);
-	}
-}
 
 static void edge_process_detection(void)
 {
