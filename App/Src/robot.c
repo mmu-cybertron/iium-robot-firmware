@@ -11,7 +11,7 @@
 #include "vesc/vescuart.h"
 
 #define VESC_SETUP 0
-#define ROBOT_EDGE_IR_DEBUG 1
+#define ROBOT_EDGE_IR_DEBUG 0
 
 void robot_init(void)
 {
@@ -22,7 +22,9 @@ void robot_init(void)
 #if !ROBOT_EDGE_IR_DEBUG
     opponent_tracker_init();
 #endif
+#if ROBOT_EDGE_SENSOR_ENABLE
     edge_detector_init();
+#endif
     failsafe_init();
     state_machine_init();
 
@@ -99,7 +101,9 @@ void robot_update(void)
     	return;
     }
 
+#if ROBOT_EDGE_SENSOR_ENABLE
     edge_detector_update();
+#endif
 
 #if !ROBOT_EDGE_IR_DEBUG
     opponent_tracker_update();

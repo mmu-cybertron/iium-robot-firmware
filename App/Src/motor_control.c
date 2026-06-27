@@ -22,7 +22,9 @@ void motor_control_init(void)
 {
     current_command.left_pwm = MOTOR_PWM_NEUTRAL;
     current_command.right_pwm = MOTOR_PWM_NEUTRAL;
+#if ROBOT_MOTOR_ENABLE
     motor_driver_init();
+#endif
 }
 
 void motor_control_set_command(motor_command_t command)
@@ -35,12 +37,16 @@ void motor_control_stop(void)
 {
     current_command.left_pwm = MOTOR_PWM_NEUTRAL;
     current_command.right_pwm = MOTOR_PWM_NEUTRAL;
+#if ROBOT_MOTOR_ENABLE
     motor_driver_brake();
+#endif
 }
 
 void motor_control_update(void)
 {
+#if ROBOT_MOTOR_ENABLE
     motor_driver_set_pwm(current_command.left_pwm, current_command.right_pwm);
+#endif
 }
 
 void motor_control_set_pwm(int16_t left_pwm, int16_t right_pwm)

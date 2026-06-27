@@ -9,6 +9,12 @@
 #define MOTOR_PWM_NEUTRAL 1500
 #define MOTOR_PWM_MIN 900
 
+/* Set to 0U to run sensors/state logic without driving the motors. */
+#define ROBOT_MOTOR_ENABLE 1U
+
+/* Set to 0U to disable analog edge sensor polling and edge escape logic. */
+#define ROBOT_EDGE_SENSOR_ENABLE 1U
+
 #define ROBOT_ATTACK_PWM 2000
 #define ROBOT_TRACK_PWM 450
 #define ROBOT_SEARCH_PWM 350

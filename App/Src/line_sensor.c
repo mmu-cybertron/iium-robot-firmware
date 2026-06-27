@@ -1,7 +1,7 @@
 #include "line_sensor.h"
 #include "main.h"
 
-#define IR_ANALOG_EDGE_THRESHOLD 2000U
+#define IR_ANALOG_EDGE_THRESHOLD 2600U
 #define IR_ANALOG_TIMEOUT_MS 1U
 #define IR3_ADC_CHANNEL 9U
 #define IR4_ADC_CHANNEL 8U
