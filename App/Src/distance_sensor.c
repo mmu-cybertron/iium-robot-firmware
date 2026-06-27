@@ -10,7 +10,7 @@
 
 extern I2C_HandleTypeDef hi2c1;
 
-#define DISTANCE_SENSOR_ENABLE_REAR_VL53L0X 1
+#define DISTANCE_SENSOR_ENABLE_REAR_VL53L0X 0
 #define VL53L1_FAILURE_LEFT                 0x01U
 #define VL53L1_FAILURE_FRONT                0x02U
 #define VL53L1_FAILURE_RIGHT                0x04U

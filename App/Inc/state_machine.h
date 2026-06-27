@@ -4,6 +4,7 @@
 #include "robot_types.h"
 
 void state_machine_init(void);
+void state_machine_background(void);
 void state_machine_update(void);
 robot_state_t state_machine_get_state(void);
 

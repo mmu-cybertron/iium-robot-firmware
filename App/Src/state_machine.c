@@ -10,13 +10,19 @@
 #include "usart1_log.h"
 #include "vesc/vescuart.h"
 
-#define EDGE_TEST 0
-#define OPPONENT_TEST 1
+#define EDGE_TEST 1
+#define OPPONENT_TEST 0
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-#define EDGE_ESCAPE_DURATION_MS 500U
+#define EDGE_ESCAPE_DURATION_MS 1000U
+#define EDGE_ESCAPE_BACKUP_MS 600U
+#define IR_EDGE_DEBOUNCE_MS 5U
+#define IR1_EDGE_TEST_ENABLE 0
+#define IR2_EDGE_TEST_ENABLE 0
+#define IR1_EDGE_DETECTED_STATE GPIO_PIN_RESET
+#define IR2_EDGE_DETECTED_STATE GPIO_PIN_RESET
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
@@ -24,17 +30,132 @@ static uint32_t current_time = 0;
 static uint32_t escape_start_time = 0;
 static uint32_t last_vesc_fault_poll_time = 0;
 static uint32_t vesc_fault_start_time = 0;
-static uint8_t is_escaping = 0;
+static volatile uint8_t is_escaping = 0;
 static uint8_t edge_mode = 0;
-static uint8_t escape_timer_started = 0;
+static volatile uint8_t escape_timer_started = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
+static volatile uint8_t ir1_interrupt_pending = 0;
+static volatile uint8_t ir2_interrupt_pending = 0;
+static volatile uint32_t ir1_interrupt_time_ms = 0;
+static volatile uint32_t ir2_interrupt_time_ms = 0;
 
 static robot_state_t current_state;
-static robot_edge_escape_mode_t current_escape_mode;
+static volatile robot_edge_escape_mode_t current_escape_mode;
 
 VescUart_t vesc1;
 VescUart_t vesc2;
+
+static void edge_debug_show_accepted(void)
+{
+	HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_SET);
+}
+
+static void edge_debug_clear_unaccepted(void)
+{
+	if (is_escaping == 0U)
+	{
+		HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_RESET);
+	}
+}
+
+static void edge_escape_begin(robot_edge_escape_mode_t escape_mode)
+{
+	current_escape_mode = escape_mode;
+	escape_timer_started = 0U;
+	is_escaping = 1U;
+	edge_debug_show_accepted();
+}
+
+static void edge_process_interrupt_candidate(volatile uint8_t *pending,
+											 uint32_t interrupt_time_ms,
+											 GPIO_TypeDef *gpio_port,
+											 uint16_t gpio_pin,
+											 GPIO_PinState detected_state,
+											 robot_edge_escape_mode_t escape_mode)
+{
+	if (*pending == 0U)
+	{
+		return;
+	}
+
+	if ((HAL_GetTick() - interrupt_time_ms) < IR_EDGE_DEBOUNCE_MS)
+	{
+		return;
+	}
+
+	*pending = 0U;
+
+	if (HAL_GPIO_ReadPin(gpio_port, gpio_pin) == detected_state)
+	{
+		edge_escape_begin(escape_mode);
+	}
+}
+
+static void edge_process_detection(void)
+{
+	edge_debug_clear_unaccepted();
+
+	if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET)
+	{
+		ir1_interrupt_pending = 0U;
+		ir2_interrupt_pending = 0U;
+		return;
+	}
+
+	if (is_escaping != 0U)
+	{
+		return;
+	}
+
+#if IR2_EDGE_TEST_ENABLE
+	edge_process_interrupt_candidate(&ir2_interrupt_pending,
+									 ir2_interrupt_time_ms,
+									 IR2_DO_GPIO_Port,
+									 IR2_DO_Pin,
+									 IR2_EDGE_DETECTED_STATE,
+									 ROBOT_ESCAPE_BACK_RIGHT);
+#endif
+
+	if (is_escaping != 0U)
+	{
+		return;
+	}
+
+#if IR1_EDGE_TEST_ENABLE
+	edge_process_interrupt_candidate(&ir1_interrupt_pending,
+									 ir1_interrupt_time_ms,
+									 IR1_DO_GPIO_Port,
+									 IR1_DO_Pin,
+									 IR1_EDGE_DETECTED_STATE,
+									 ROBOT_ESCAPE_BACK_RIGHT);
+#endif
+
+}
+
+static void edge_process_analog_detection(const edge_status_t *edge)
+{
+	if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET)
+	{
+		return;
+	}
+
+	if (is_escaping != 0U)
+	{
+		return;
+	}
+
+	if (edge->front_left != 0U)
+	{
+		edge_escape_begin(ROBOT_ESCAPE_BACK_RIGHT);
+	}
+	else if (edge->front_right != 0U)
+	{
+		edge_escape_begin(ROBOT_ESCAPE_BACK_LEFT);
+	}
+}
 
 static void vesc_stop_all(void)
 {
@@ -105,12 +226,21 @@ void state_machine_init(void)
     run_once = 0;
 }
 
+void state_machine_background(void)
+{
+}
+
 void state_machine_update(void)
 {
     const opponent_status_t opponent = opponent_tracker_get_status();
     const edge_status_t edge = edge_detector_get_status();
 
     //TOF_debug();
+
+#if EDGE_TEST
+    edge_process_analog_detection(&edge);
+    edge_process_detection();
+#endif
 
     if (failsafe_is_faulted())
     {
@@ -191,7 +321,7 @@ void state_machine_update(void)
 
     switch (current_state)
     {
-        
+
         #if EDGE_TEST
     case ROBOT_STATE_EDGE_ESCAPE:
         // motor_control_set_command(motion_reverse(ROBOT_EDGE_ESCAPE_PWM));
@@ -200,7 +330,15 @@ void state_machine_update(void)
         // VescUart_SetDuty(&vesc2, -0.94f);
         // VescUart_SetBrakeCurrent(&vesc1, 20.0f);
         // VescUart_SetBrakeCurrent(&vesc2, 20.0f);
-        
+
+
+        if (((current_escape_mode == ROBOT_ESCAPE_BACK_LEFT) ||
+             (current_escape_mode == ROBOT_ESCAPE_BACK_RIGHT)) &&
+            ((current_time - escape_start_time) <= EDGE_ESCAPE_BACKUP_MS))
+        {
+            motor_control_set_pwm(1000, 1000);
+            break;
+        }
 
         switch (current_escape_mode) {
             case ROBOT_ESCAPE_BACK:
@@ -210,10 +348,10 @@ void state_machine_update(void)
                 motor_control_set_pwm(2250, 2250);
                 break;
             case ROBOT_ESCAPE_BACK_LEFT:
-                motor_control_set_pwm(1000, 1500);
+                motor_control_set_pwm(1000, 1300);
                 break;
             case ROBOT_ESCAPE_BACK_RIGHT:
-                motor_control_set_pwm(1500, 1000);
+                motor_control_set_pwm(1300, 1000);
                 break;
             case ROBOT_ESCAPE_NONE:
             default:
@@ -312,9 +450,9 @@ void state_machine_update(void)
 					GPIO_PIN_SET);
         }
         break;
-    #else 
+    #else
     case ROBOT_STATE_SEARCH:
-        motor_control_set_pwm(1900, 1900);
+        motor_control_set_pwm(2150, 2150);
         break;
     #endif
 
@@ -336,38 +474,50 @@ robot_state_t state_machine_get_state(void)
 {
     return current_state;
 }
- 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
-	if (!is_escaping)
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	const uint32_t now_ms = HAL_GetTick();
+
+	if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET)
 	{
-		motor_control_stop();
-
-		is_escaping = 1;
-
-		// GPIO PIN 2 = RIGHT
-		// GPIO PIN 10 = LEFT
-		if (GPIO_Pin == GPIO_PIN_2)
+		if (GPIO_Pin == IR2_DO_Pin)
 		{
-			current_escape_mode = ROBOT_ESCAPE_BACK_LEFT;
-
+			ir2_interrupt_pending = 0U;
 		}
-		else if (GPIO_Pin == GPIO_PIN_10)
+		else if (GPIO_Pin == IR1_DO_Pin)
 		{
-			current_escape_mode = ROBOT_ESCAPE_BACK_RIGHT;
-
+			ir1_interrupt_pending = 0U;
 		}
+		return;
+	}
 
-		switch (current_escape_mode)
+	if (GPIO_Pin == IR2_DO_Pin)
+	{
+#if IR2_EDGE_TEST_ENABLE
+		if (HAL_GPIO_ReadPin(IR2_DO_GPIO_Port, IR2_DO_Pin) == IR2_EDGE_DETECTED_STATE)
 		{
-		case ROBOT_ESCAPE_BACK_LEFT:
-			motor_control_set_pwm(1000, 1500);
-			break;
-		case ROBOT_ESCAPE_BACK_RIGHT:
-			motor_control_set_pwm(1500, 1000);
-			break;
-		default:
-			break;
+			ir2_interrupt_time_ms = now_ms;
+			ir2_interrupt_pending = 1U;
 		}
+		else
+		{
+			ir2_interrupt_pending = 0U;
+		}
+#endif
+	}
+	else if (GPIO_Pin == IR1_DO_Pin)
+	{
+#if IR1_EDGE_TEST_ENABLE
+		if (HAL_GPIO_ReadPin(IR1_DO_GPIO_Port, IR1_DO_Pin) == IR1_EDGE_DETECTED_STATE)
+		{
+			ir1_interrupt_time_ms = now_ms;
+			ir1_interrupt_pending = 1U;
+		}
+		else
+		{
+			ir1_interrupt_pending = 0U;
+		}
+#endif
 	}
 }

@@ -11,6 +11,7 @@
 #include "vesc/vescuart.h"
 
 #define VESC_SETUP 0
+#define ROBOT_EDGE_IR_DEBUG 1
 
 void robot_init(void)
 {
@@ -18,8 +19,10 @@ void robot_init(void)
     
     motor_control_init();
     HAL_Delay(1000);
-    //edge_detector_init();
+#if !ROBOT_EDGE_IR_DEBUG
     opponent_tracker_init();
+#endif
+    edge_detector_init();
     failsafe_init();
     state_machine_init();
 
@@ -28,6 +31,7 @@ void robot_init(void)
 
 void robot_update(void)
 {
+
 //    static uint8_t motor_test_done;
 //
 //    if (motor_test_done) {
@@ -95,9 +99,11 @@ void robot_update(void)
     	return;
     }
 
-    //edge_detector_update();
+    edge_detector_update();
 
+#if !ROBOT_EDGE_IR_DEBUG
     opponent_tracker_update();
+#endif
     
     state_machine_update();
 
@@ -107,6 +113,6 @@ void robot_update(void)
 
 void robot_background(void)
 {
-    // Background tasks can go here if needed later
+    state_machine_background();
 }
 

@@ -74,7 +74,6 @@ void Error_Handler(void);
 #define IR2_DO_EXTI_IRQn EXTI2_IRQn
 #define IR1_DO_Pin GPIO_PIN_10
 #define IR1_DO_GPIO_Port GPIOB
-#define IR1_DO_EXTI_IRQn EXTI15_10_IRQn
 #define Mode_Button_Pin GPIO_PIN_12
 #define Mode_Button_GPIO_Port GPIOB
 #define Confirm_Button_Pin GPIO_PIN_13
