@@ -63,9 +63,16 @@ static void edge_debug_clear_unaccepted(void)
 static void edge_escape_begin(robot_edge_escape_mode_t escape_mode)
 {
 	current_escape_mode = escape_mode;
-	escape_timer_started = 0U;
+	current_time = HAL_GetTick();
+	escape_start_time = current_time;
+	escape_timer_started = 1U;
 	is_escaping = 1U;
 	edge_debug_show_accepted();
+}
+
+static uint32_t edge_escape_elapsed_ms(void)
+{
+	return HAL_GetTick() - escape_start_time;
 }
 
 
@@ -247,13 +254,7 @@ void state_machine_update(void)
     {
     	current_time = HAL_GetTick();
 
-    	if (!escape_timer_started)
-    	{
-    		escape_start_time = current_time;
-    		escape_timer_started = 1;
-    	}
-
-    	if (current_time - escape_start_time <= EDGE_ESCAPE_DURATION_MS)
+    	if (edge_escape_elapsed_ms() <= EDGE_ESCAPE_DURATION_MS)
     	{
     		current_state = ROBOT_STATE_EDGE_ESCAPE;
     	}
@@ -309,7 +310,7 @@ void state_machine_update(void)
 
         if (((current_escape_mode == ROBOT_ESCAPE_BACK_LEFT) ||
              (current_escape_mode == ROBOT_ESCAPE_BACK_RIGHT)) &&
-            ((current_time - escape_start_time) <= EDGE_ESCAPE_BACKUP_MS))
+            (edge_escape_elapsed_ms() <= EDGE_ESCAPE_BACKUP_MS))
         {
             motor_control_set_pwm(1000, 1000);
             break;
@@ -452,7 +453,9 @@ robot_state_t state_machine_get_state(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+#if IR1_EDGE_TEST_ENABLE || IR2_EDGE_TEST_ENABLE
 	const uint32_t now_ms = HAL_GetTick();
+#endif
 
 	if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET)
 	{
