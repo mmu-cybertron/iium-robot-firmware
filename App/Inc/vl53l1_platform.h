@@ -72,9 +72,9 @@
  * these parameters set the ranging configuration
  * on the device boot
  ***************************************************/
-#define VL53L1__DISTANCE_MODE		(2)		// 1=short, 2=long
-#define VL53L1__TIMING_BUDGET		(33)	// in ms, possible values: [15 (only if DISTANCE MODE is 1), 20, 33, 50, 100, 200, 500] - that's the time for a single reading
-#define VL53L1__TB_IM_DELTA			(5)		// in ms, added to TB to get IM setting
+#define VL53L1__DISTANCE_MODE		(1)		// 1=short, 2=long
+#define VL53L1__TIMING_BUDGET		(15)	// in ms, possible values: [15 (only if DISTANCE MODE is 1), 20, 33, 50, 100, 200, 500] - that's the time for a single reading
+#define VL53L1__TB_IM_DELTA			(10)		// in ms, added to TB to get IM setting
 #define VL53L1__INTERMEASUREMENT	(VL53L1__TIMING_BUDGET + VL53L1__TB_IM_DELTA)		// in ms, it must be > = VL53L1_TIMING_BUDGET - that's the interval (including reading time) between two readings in continuous mode
 
 
@@ -84,9 +84,9 @@
  * Detect them using the STM calibration functions
  * available in the VL53L1X package
  ***************************************************/
-#define VL53L1__WINDOW_MODE		(0)		// 0=below, 1=beyond, 2=out of window, 3=inside window
-#define VL53L1__LOWER_THRESHOLD	(5000)		// (mm) lower window limit. For WINDOW_MODE = 0, 2, 3
-#define VL53L1__UPPER_THRESHOLD	(5000)		// (mm) upper window limit. For WINDOW_MODE = 1, 2, 3
+#define VL53L1__WINDOW_MODE		(3)		// 0=below, 1=beyond, 2=out of window, 3=inside window
+#define VL53L1__LOWER_THRESHOLD	(0)	//5000	// (mm) lower window limit. For WINDOW_MODE = 0, 2, 3
+#define VL53L1__UPPER_THRESHOLD	(1500)	//5000	// (mm) upper window limit. For WINDOW_MODE = 1, 2, 3
 
 
 /*****************     STEP 4      *****************
@@ -120,7 +120,7 @@
  * 2= warning: low return signal level
  * 4-7 errors
  *******************************************/
-#define VL53L1__RANGE_STATUS_THRESH	(2)		// acceptable values: 0,1,2,4,7
+#define VL53L1__RANGE_STATUS_THRESH	(0)		// acceptable values: 0,1,2,4,7
 
 /*|||||||| END OF USER/PROJECT PARAMETERS ||||||||*/
 

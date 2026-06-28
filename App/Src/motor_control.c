@@ -1,5 +1,5 @@
 #include "motor_control.h"
-
+#include "usart1_log.h"
 #include "motor_driver.h"
 #include "robot_config.h"
 

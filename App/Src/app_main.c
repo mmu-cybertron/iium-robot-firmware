@@ -121,6 +121,8 @@ void app_main(void)
     /* Initialize core systems */
     robot_init();
     LOG_PRINT("Robot initialized, update period: %lu ms\r\n", (unsigned long)ROBOT_UPDATE_PERIOD_MS);
+    motor_control_set_pwm(1900, 1900);
+	HAL_Delay(2000);
 
 #if ROBOT_GAME_MODE_SELECTOR_ENABLE
     /* ===== PHASE 1 + PHASE 2: MODE SELECTION, THEN WAIT FOR START =====
@@ -220,18 +222,19 @@ void app_main(void)
         const uint32_t now_ms = HAL_GetTick();
 
 #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
+
         const opponent_status_t tofData = distance_sensor_read_opponent();
         static uint32_t last_sensor_log_ms = 0U;
 
         if ((now_ms - last_sensor_log_ms) >= 200U) {
             last_sensor_log_ms = now_ms;
-            LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
-                      (int)tofData.front,
-                      (int)tofData.left,
-                      (int)tofData.right,
-                      (int)tofData.rear_right,
-                      (int)tofData.rear_left,
-                      (unsigned int)tofData.distance_mm);
+//            LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+//                      (int)tofData.front,
+//                      (int)tofData.left,
+//                      (int)tofData.right,
+//                      (int)tofData.rear_right,
+//                      (int)tofData.rear_left,
+//                      (unsigned int)tofData.distance_mm);
         }
 #endif
 

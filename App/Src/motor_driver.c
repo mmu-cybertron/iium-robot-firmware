@@ -2,7 +2,7 @@
 
 #include "main.h"
 #include "robot_config.h"
-
+#include "usart1_log.h"
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 
@@ -70,13 +70,14 @@ void motor_driver_init(void)
     }
 
     if (HAL_TIM_PWM_Start(RIGHT_MOTOR_PWM_TIMER, RIGHT_MOTOR_PWM_CHANNEL) != HAL_OK) {
+        LOG_PRINT("motor_driver_init: RIGHT TIM3 CH2 PWM_Start FAILED\r\n");
         HAL_TIM_PWM_Stop(LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL);
         return;
     }
 
     set_neutral_pwm();
-    
     is_initialized = 1U;
+    LOG_PRINT("motor_driver_init: OK, both PWM channels started\r\n");
 }
 
 void motor_driver_set_pwm(int16_t left_pwm, int16_t right_pwm)

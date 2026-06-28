@@ -13,7 +13,7 @@
 #define ROBOT_MOTOR_ENABLE 1U
 
 /* Set to 0U to disable analog edge sensor polling and edge escape logic. */
-#define ROBOT_EDGE_SENSOR_ENABLE 1U
+#define ROBOT_EDGE_SENSOR_ENABLE 0U
 
 #define ROBOT_ATTACK_PWM 2000
 #define ROBOT_TRACK_PWM 450
@@ -26,7 +26,7 @@
 #define ROBOT_MODE_LOGGING_ENABLE 1
 #define ROBOT_MODE_RUN        2
 
-#define ROBOT_ACTIVE_MODE ROBOT_MODE_RUN
+#define ROBOT_ACTIVE_MODE ROBOT_MODE_LOGGING_ENABLE
 
 /* Set to 0U to skip game-mode selection and initial-move execution. */
 #define ROBOT_GAME_MODE_SELECTOR_ENABLE 0U

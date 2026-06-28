@@ -1,5 +1,5 @@
 #include "state_machine.h"
-
+#include "line_sensor.h"
 #include "edge_detector.h"
 #include "distance_sensor.h"
 #include "failsafe.h"
@@ -18,8 +18,8 @@ extern UART_HandleTypeDef huart2;
 
 #define EDGE_ESCAPE_DURATION_MS 800U
 #define EDGE_ESCAPE_BACKUP_MS 600U
-#define IR1_EDGE_TEST_ENABLE 0
-#define IR2_EDGE_TEST_ENABLE 0
+#define IR1_EDGE_TEST_ENABLE 1
+#define IR2_EDGE_TEST_ENABLE 1
 #define IR1_EDGE_DETECTED_STATE GPIO_PIN_RESET
 #define IR2_EDGE_DETECTED_STATE GPIO_PIN_RESET
 #define VESC_FAULT_POLL_PERIOD_MS 200U
@@ -131,7 +131,33 @@ static void edge_escape_execute_blocking(void)
 	motor_control_set_pwm(2150, 2150);
 }
 
+static void edge_process_interrupt_candidate(volatile uint8_t *pending_flag,
+                                              uint32_t interrupt_time_ms,
+                                              GPIO_TypeDef *port,
+                                              uint16_t pin,
+                                              GPIO_PinState detected_state,
+                                              robot_edge_escape_mode_t escape_mode)
+{
+    if (*pending_flag == 0U)
+    {
+        return;
+    }
 
+    *pending_flag = 0U;
+
+    GPIO_PinState pin_state = HAL_GPIO_ReadPin(port, pin);
+    LOG_PRINT("edge_candidate: pin=%u state=%d detected_state=%d age_ms=%lu\r\n",
+              (unsigned)pin, pin_state, detected_state,
+              (unsigned long)(HAL_GetTick() - interrupt_time_ms));
+
+    if (pin_state != detected_state)
+    {
+        return;
+    }
+
+    LOG_PRINT("edge_candidate: ESCAPE triggered, mode=%d\r\n", (int)escape_mode);
+    edge_escape_begin(escape_mode);
+}
 static void edge_process_detection(void)
 {
 	edge_debug_clear_unaccepted();
@@ -276,8 +302,10 @@ void state_machine_update(void)
     //TOF_debug();
 
 #if EDGE_TEST
+
     edge_process_analog_detection(&edge);
     edge_process_detection();
+    LOG_PRINT("IR1=%d IR2=%d\r\n", HAL_GPIO_ReadPin(IR1_DO_GPIO_Port, IR1_DO_Pin), HAL_GPIO_ReadPin(IR2_DO_GPIO_Port, IR2_DO_Pin));
 #endif
 
     if (failsafe_is_faulted())
@@ -438,6 +466,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		{
 			ir2_interrupt_time_ms = now_ms;
 			ir2_interrupt_pending = 1U;
+		    LOG_PRINT("====IR2 DETECT\r\n");
+
 		}
 		else
 		{
@@ -452,6 +482,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		{
 			ir1_interrupt_time_ms = now_ms;
 			ir1_interrupt_pending = 1U;
+		    LOG_PRINT("====IR1 DETECT\r\n");
+
 		}
 		else
 		{
