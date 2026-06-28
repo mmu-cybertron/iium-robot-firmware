@@ -5,6 +5,8 @@
 
 void distance_sensor_init(void);
 opponent_status_t distance_sensor_read_opponent(void);
+uint8_t distance_sensor_needs_recovery(void);
+void distance_sensor_recover_during_edge_escape(void);
 extern opponent_status_t last_status;
 
 uint16_t front_mm_return(void);
