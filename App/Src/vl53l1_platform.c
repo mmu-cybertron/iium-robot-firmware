@@ -354,7 +354,7 @@ uint8_t VL53L1__InitAll(void) {
         if (VL53L1X_CheckForDataReady(addr, &dataReady) != 0) {
             return 1U;
         }
-        if ((HAL_GetTick() - t) > 15U) {
+        if ((HAL_GetTick() - t) > 3U) {
             return 1U;
         }
         HAL_Delay(1);
