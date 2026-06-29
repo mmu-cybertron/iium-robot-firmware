@@ -67,13 +67,16 @@ void Error_Handler(void);
 #define RIGHT_DIR_GPIO_Port GPIOA
 #define IR4_DO_Pin GPIO_PIN_0
 #define IR4_DO_GPIO_Port GPIOB
+#define IR4_DO_EXTI_IRQn EXTI0_IRQn
 #define IR3_DO_Pin GPIO_PIN_1
 #define IR3_DO_GPIO_Port GPIOB
+#define IR3_DO_EXTI_IRQn EXTI1_IRQn
 #define IR2_DO_Pin GPIO_PIN_2
 #define IR2_DO_GPIO_Port GPIOB
 #define IR2_DO_EXTI_IRQn EXTI2_IRQn
 #define IR1_DO_Pin GPIO_PIN_10
 #define IR1_DO_GPIO_Port GPIOB
+#define IR1_DO_EXTI_IRQn EXTI15_10_IRQn
 #define Mode_Button_Pin GPIO_PIN_12
 #define Mode_Button_GPIO_Port GPIOB
 #define Confirm_Button_Pin GPIO_PIN_13

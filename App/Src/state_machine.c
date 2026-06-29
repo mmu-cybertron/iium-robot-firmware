@@ -9,6 +9,7 @@
 #include "robot_config.h"
 #include "usart1_log.h"
 #include "vesc/vescuart.h"
+#include "game_mode_selector.h"
 
 #define EDGE_TEST ROBOT_EDGE_SENSOR_ENABLE
 #define OPPONENT_TEST 1
@@ -24,6 +25,72 @@ extern UART_HandleTypeDef huart2;
 #define IR2_EDGE_DETECTED_STATE GPIO_PIN_RESET
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
+
+/* =============================================================================
+ * GAME MODE PROFILES
+ * -----------------------------------------------------------------------------
+ * Each mode's search/attack/track tuning lives in its own #if block. Flip a
+ * mode's _ENABLE to 0 to pull it out of the build entirely while debugging -
+ * its case just falls through to the safe baseline values declared below, so
+ * the firmware still builds and runs.
+ *
+ * Mode pairing with the existing opening move (game_mode_selector.c):
+ *   GAME_MODE_1 = turn-left opener  -> "Rusher"   (commits to attack sooner)
+ *   GAME_MODE_2 = turn-right opener -> "Counter"  (waits, holds track longer)
+ *   GAME_MODE_3 = straight opener   -> "Standard" (original baseline values,
+ *                                       unchanged from before this feature)
+ *
+ * NOTE: failsafe handling, edge-escape triggering, and edge-escape drive
+ * timing are intentionally left OUT of the per-mode profile - they stay
+ * identical for every mode for safety. Only search/attack/track behavior
+ * varies by mode.
+ *
+ * All numeric values below are PLACEHOLDERS to get you running - tune them
+ * on the bench for your actual bot/ring.
+ * =============================================================================
+ */
+#define GAME_MODE_1_ENABLE   1
+#define GAME_MODE_2_ENABLE   1
+#define GAME_MODE_3_ENABLE   1
+
+#if GAME_MODE_1_ENABLE
+/* ----- MODE 1: RUSHER -----
+ * Charges the opponent from farther away and pushes harder once attacking.
+ * Gives up a track quickly so it's back to rushing forward sooner. */
+#define GAME_MODE_1_SEARCH_PWM         2150
+#define GAME_MODE_1_ATTACK_PWM         2250
+#define GAME_MODE_1_ATTACK_RANGE_MM    900U
+#define GAME_MODE_1_TRACK_PWM_FAST     2150
+#define GAME_MODE_1_TRACK_PWM_SLOW     1000
+#define GAME_MODE_1_TRACK_TIMEOUT_MS   800U
+#define GAME_MODE_1_TRACK_COOLDOWN_MS  500U
+#endif
+
+#if GAME_MODE_2_ENABLE
+/* ----- MODE 2: COUNTER -----
+ * Cautious - waits until the opponent is point-blank before committing to
+ * the attack, and keeps circling/tracking a lot longer before giving up. */
+#define GAME_MODE_2_SEARCH_PWM         2000
+#define GAME_MODE_2_ATTACK_PWM         2250
+#define GAME_MODE_2_ATTACK_RANGE_MM    500U
+#define GAME_MODE_2_TRACK_PWM_FAST     2150
+#define GAME_MODE_2_TRACK_PWM_SLOW     1000
+#define GAME_MODE_2_TRACK_TIMEOUT_MS   2500U
+#define GAME_MODE_2_TRACK_COOLDOWN_MS  300U
+#endif
+
+#if GAME_MODE_3_ENABLE
+/* ----- MODE 3: STANDARD -----
+ * Exactly the values that were hardcoded in this file before per-mode
+ * behavior existed - kept here unchanged as the baseline/default. */
+#define GAME_MODE_3_SEARCH_PWM         2150
+#define GAME_MODE_3_ATTACK_PWM         2250
+#define GAME_MODE_3_ATTACK_RANGE_MM    700U
+#define GAME_MODE_3_TRACK_PWM_FAST     2150
+#define GAME_MODE_3_TRACK_PWM_SLOW     1000
+#define GAME_MODE_3_TRACK_TIMEOUT_MS   OPPONENT_TRACK_TIMEOUT_MS
+#define GAME_MODE_3_TRACK_COOLDOWN_MS  OPPONENT_TRACK_COOLDOWN_MS
+#endif
 
 static uint32_t current_time = 0;
 static uint32_t escape_start_time = 0;
@@ -328,6 +395,65 @@ void state_machine_update(void)
         front_seen_or_latched = 1U;
     }
 
+    /* ----- Resolve the active game mode's profile -----
+     * Which mode is "active" comes from game_mode_selector (locked once,
+     * before the round starts). If the selector is disabled in this build,
+     * fall back to GAME_MODE_3 / Standard so behavior matches pre-feature
+     * firmware exactly. */
+#if ROBOT_GAME_MODE_SELECTOR_ENABLE
+    const game_mode_t active_game_mode = game_mode_selector_get_mode();
+#else
+    const game_mode_t active_game_mode = GAME_MODE_3;
+#endif
+
+    uint16_t mode_search_pwm        = 2150;
+    uint16_t mode_attack_pwm        = 2250;
+    uint16_t mode_attack_range_mm   = 700U;
+    uint16_t mode_track_pwm_fast    = 2150;
+    uint16_t mode_track_pwm_slow    = 1000;
+    uint32_t mode_track_timeout_ms  = OPPONENT_TRACK_TIMEOUT_MS;
+    uint32_t mode_track_cooldown_ms = OPPONENT_TRACK_COOLDOWN_MS;
+
+    switch (active_game_mode) {
+#if GAME_MODE_1_ENABLE
+    case GAME_MODE_1:
+        mode_search_pwm        = GAME_MODE_1_SEARCH_PWM;
+        mode_attack_pwm        = GAME_MODE_1_ATTACK_PWM;
+        mode_attack_range_mm   = GAME_MODE_1_ATTACK_RANGE_MM;
+        mode_track_pwm_fast    = GAME_MODE_1_TRACK_PWM_FAST;
+        mode_track_pwm_slow    = GAME_MODE_1_TRACK_PWM_SLOW;
+        mode_track_timeout_ms  = GAME_MODE_1_TRACK_TIMEOUT_MS;
+        mode_track_cooldown_ms = GAME_MODE_1_TRACK_COOLDOWN_MS;
+        break;
+#endif
+#if GAME_MODE_2_ENABLE
+    case GAME_MODE_2:
+        mode_search_pwm        = GAME_MODE_2_SEARCH_PWM;
+        mode_attack_pwm        = GAME_MODE_2_ATTACK_PWM;
+        mode_attack_range_mm   = GAME_MODE_2_ATTACK_RANGE_MM;
+        mode_track_pwm_fast    = GAME_MODE_2_TRACK_PWM_FAST;
+        mode_track_pwm_slow    = GAME_MODE_2_TRACK_PWM_SLOW;
+        mode_track_timeout_ms  = GAME_MODE_2_TRACK_TIMEOUT_MS;
+        mode_track_cooldown_ms = GAME_MODE_2_TRACK_COOLDOWN_MS;
+        break;
+#endif
+#if GAME_MODE_3_ENABLE
+    case GAME_MODE_3:
+        mode_search_pwm        = GAME_MODE_3_SEARCH_PWM;
+        mode_attack_pwm        = GAME_MODE_3_ATTACK_PWM;
+        mode_attack_range_mm   = GAME_MODE_3_ATTACK_RANGE_MM;
+        mode_track_pwm_fast    = GAME_MODE_3_TRACK_PWM_FAST;
+        mode_track_pwm_slow    = GAME_MODE_3_TRACK_PWM_SLOW;
+        mode_track_timeout_ms  = GAME_MODE_3_TRACK_TIMEOUT_MS;
+        mode_track_cooldown_ms = GAME_MODE_3_TRACK_COOLDOWN_MS;
+        break;
+#endif
+    default:
+        /* Any disabled/unknown mode falls back to the baseline values
+         * already set above - never an unhandled case. */
+        break;
+    }
+
     //TOF_debug();
 
 #if EDGE_TEST
@@ -377,15 +503,15 @@ void state_machine_update(void)
     else if ((current_state == ROBOT_STATE_TRACK_LEFT) ||
              (current_state == ROBOT_STATE_TRACK_RIGHT))
     {
-    	if ((now_ms - opponent_track_start_ms) >= OPPONENT_TRACK_TIMEOUT_MS)
+    	if ((now_ms - opponent_track_start_ms) >= mode_track_timeout_ms)
     	{
             if (current_state == ROBOT_STATE_TRACK_LEFT)
             {
-                opponent_left_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
+                opponent_left_cooldown_until_ms = now_ms + mode_track_cooldown_ms;
             }
             else
             {
-                opponent_right_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
+                opponent_right_cooldown_until_ms = now_ms + mode_track_cooldown_ms;
             }
     		current_state = ROBOT_STATE_SEARCH;
     	}
@@ -423,8 +549,8 @@ void state_machine_update(void)
 
         //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
     	int front_mm = front_mm_return();
-    	if (front_mm <= 700){
-    		motor_control_set_pwm(2250, 2250);
+    	if (front_mm <= mode_attack_range_mm){
+    		motor_control_set_pwm(mode_attack_pwm, mode_attack_pwm);
     	}
         //LOG_PRINT("Attacking\n");
         opponent_debug_leds(&opponent);
@@ -432,18 +558,18 @@ void state_machine_update(void)
 
     case ROBOT_STATE_TRACK_LEFT:
     	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(2150, 1000);
+        motor_control_set_pwm(mode_track_pwm_fast, mode_track_pwm_slow);
         break;
 
     case ROBOT_STATE_TRACK_RIGHT:
     	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(1000, 2150);
+        motor_control_set_pwm(mode_track_pwm_slow, mode_track_pwm_fast);
         break;
 
     case ROBOT_STATE_SEARCH:
     	opponent_debug_leds(&opponent);
 
-        motor_control_set_pwm(2150, 2150);
+        motor_control_set_pwm(mode_search_pwm, mode_search_pwm);
         break;
     #else
     case ROBOT_STATE_SEARCH:
