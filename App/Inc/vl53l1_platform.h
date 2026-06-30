@@ -77,6 +77,12 @@
 #define VL53L1__TB_IM_DELTA			(5)		// in ms, added to TB to get IM setting
 #define VL53L1__INTERMEASUREMENT	(VL53L1__TIMING_BUDGET + VL53L1__TB_IM_DELTA)		// in ms, it must be > = VL53L1_TIMING_BUDGET - that's the interval (including reading time) between two readings in continuous mode
 
+#define VL53L1__LZDISTANCE_MODE		(1)		// 1=short, 2=long
+#define VL53L1__LZTIMING_BUDGET		(15)	// in ms, possible values: [15 (only if DISTANCE MODE is 1), 20, 33, 50, 100, 200, 500] - that's the time for a single reading
+#define VL53L1__LZTB_IM_DELTA			(5)		// in ms, added to TB to get IM setting
+#define VL53L1__LZINTERMEASUREMENT	(15)		// in ms, it must be > = VL53L1_TIMING_BUDGET - that's the interval (including reading time) between two readings in continuous mode
+
+
 
 /*****************     STEP 3      *****************
  ********* VL53L1X active window parameters ********

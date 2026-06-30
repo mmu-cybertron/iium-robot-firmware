@@ -348,10 +348,30 @@ void state_machine_update(void)
     {
         current_state = ROBOT_STATE_ATTACK;
     }
+    else if ((opponent.left != 0U) && (opponent.right != 0U))
+    {
+        current_state = ROBOT_STATE_ATTACK;
+    }
     else if ((current_state == ROBOT_STATE_TRACK_LEFT) ||
              (current_state == ROBOT_STATE_TRACK_RIGHT))
     {
-    	if ((now_ms - opponent_track_start_ms) >= OPPONENT_TRACK_TIMEOUT_MS)
+        if ((current_state == ROBOT_STATE_TRACK_LEFT) &&
+            (opponent.right != 0U) &&
+            (opponent.left == 0U) &&
+            ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
+        {
+            current_state = ROBOT_STATE_TRACK_RIGHT;
+            opponent_track_start_ms = now_ms;
+        }
+        else if ((current_state == ROBOT_STATE_TRACK_RIGHT) &&
+                 (opponent.left != 0U) &&
+                 (opponent.right == 0U) &&
+                 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
+        {
+            current_state = ROBOT_STATE_TRACK_LEFT;
+            opponent_track_start_ms = now_ms;
+        }
+    	else if ((now_ms - opponent_track_start_ms) >= OPPONENT_TRACK_TIMEOUT_MS)
     	{
             if (current_state == ROBOT_STATE_TRACK_LEFT)
             {
@@ -406,12 +426,12 @@ void state_machine_update(void)
 
     case ROBOT_STATE_TRACK_LEFT:
     	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(1950, 1200);
+        motor_control_set_pwm(2150, 1000);
         break;
 
     case ROBOT_STATE_TRACK_RIGHT:
     	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(1200, 1950);
+        motor_control_set_pwm(1000, 2150);
         break;
 
     case ROBOT_STATE_SEARCH:
@@ -424,7 +444,7 @@ void state_machine_update(void)
         	break;
         }
 
-        // motor_control_set_pwm(1500, 1500);
+        motor_control_set_pwm(1500, 1500);
         break;
     #else
     case ROBOT_STATE_SEARCH:
