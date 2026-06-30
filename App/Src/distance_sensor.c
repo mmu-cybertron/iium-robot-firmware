@@ -11,32 +11,34 @@
 extern I2C_HandleTypeDef hi2c1;
 
 #define DISTANCE_SENSOR_ENABLE_REAR_VL53L0X 0
-#define VL53L1_FAILURE_LEFT                 0x01U
-#define VL53L1_FAILURE_FRONT                0x02U
-#define VL53L1_FAILURE_RIGHT                0x04U
-#define VL53L1_FAILURE_ALL                  (VL53L1_FAILURE_LEFT | \
-                                             VL53L1_FAILURE_FRONT | \
-                                             VL53L1_FAILURE_RIGHT)
-#define VL53L1_FAILURE_RECOVERY_THRESHOLD   3U
-#define VL53L1_STALE_HOLD_MS                250U
-#define VL53L1_I2C_RECOVERY_CLOCK_PULSES    9U
-#define VL53L1_POLL_PERIOD_MS               VL53L1__INTERMEASUREMENT
-#define VL53L1_FAILURE_LED_THRESHOLD        10U
-#define VL53L1_FAILURE_LED_CLEAR_THRESHOLD  10U
-#define VL53L1_FAILURE_LED_BLINK_MS         125U
+#define VL53L1_FAILURE_LEFT 0x01U
+#define VL53L1_FAILURE_FRONT 0x02U
+#define VL53L1_FAILURE_RIGHT 0x04U
+#define VL53L1_FAILURE_ALL (VL53L1_FAILURE_LEFT |  \
+                            VL53L1_FAILURE_FRONT | \
+                            VL53L1_FAILURE_RIGHT)
+#define VL53L1_FAILURE_RECOVERY_THRESHOLD 3U
+#define VL53L1_STALE_HOLD_MS 250U
+#define VL53L1_I2C_RECOVERY_CLOCK_PULSES 9U
+#define VL53L1_POLL_PERIOD_MS VL53L1__INTERMEASUREMENT
+#define VL53L1_FAILURE_LED_THRESHOLD 10U
+#define VL53L1_FAILURE_LED_CLEAR_THRESHOLD 10U
+#define VL53L1_FAILURE_LED_BLINK_MS 125U
 #define VL53L1_EDGE_ESCAPE_RECOVERY_PERIOD_MS 2000U
 
 static uint8_t is_initialized;
 opponent_status_t last_status;
 
-typedef enum {
+typedef enum
+{
     VL53L1_SENSOR_LEFT = 0,
     VL53L1_SENSOR_FRONT,
     VL53L1_SENSOR_RIGHT,
     VL53L1_SENSOR_COUNT
 } vl53l1_sensor_index_t;
 
-typedef struct {
+typedef struct
+{
     uint16_t distance_mm;
     uint32_t updated_ms;
     uint8_t has_value;
@@ -71,21 +73,25 @@ static uint16_t vl53l0x_read_distance(VL53L0X_DEV dev)
     VL53L0X_RangingMeasurementData_t measurement;
     uint8_t ready = 0U;
 
-    if (VL53L0X_GetMeasurementDataReady(dev, &ready) != VL53L0X_ERROR_NONE) {
+    if (VL53L0X_GetMeasurementDataReady(dev, &ready) != VL53L0X_ERROR_NONE)
+    {
         return 0U;
     }
 
-    if (ready == 0U) {
+    if (ready == 0U)
+    {
         return 0U;
     }
 
-    if (VL53L0X_GetRangingMeasurementData(dev, &measurement) != VL53L0X_ERROR_NONE) {
+    if (VL53L0X_GetRangingMeasurementData(dev, &measurement) != VL53L0X_ERROR_NONE)
+    {
         return 0U;
     }
 
     (void)VL53L0X_ClearInterruptMask(dev, 0U);
 
-    if (measurement.RangeStatus != 0U) {
+    if (measurement.RangeStatus != 0U)
+    {
         return 0U;
     }
 
@@ -112,80 +118,94 @@ static uint8_t vl53l0x_init_rear_sensor(VL53L0X_DEV dev,
     dev->I2cDevAddr = 0x52U;
 
     status = VL53L0X_WaitDeviceBooted(dev);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_DataInit(dev);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_StaticInit(dev);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_PerformRefCalibration(dev, &vhv_settings, &phase_cal);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_PerformRefSpadManagement(dev, &ref_spad_count, &is_aperture_spads);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetDeviceMode(dev, VL53L0X_DEVICEMODE_CONTINUOUS_RANGING);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetLimitCheckEnable(dev, VL53L0X_CHECKENABLE_SIGMA_FINAL_RANGE, 1);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetLimitCheckEnable(dev, VL53L0X_CHECKENABLE_SIGNAL_RATE_FINAL_RANGE, 1);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetLimitCheckValue(dev,
                                         VL53L0X_CHECKENABLE_SIGNAL_RATE_FINAL_RANGE,
                                         (FixPoint1616_t)(0.1F * 65536.0F));
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetLimitCheckValue(dev,
                                         VL53L0X_CHECKENABLE_SIGMA_FINAL_RANGE,
                                         (FixPoint1616_t)(60.0F * 65536.0F));
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetMeasurementTimingBudgetMicroSeconds(dev, 20000U);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetVcselPulsePeriod(dev,
                                          VL53L0X_VCSEL_PERIOD_PRE_RANGE,
                                          18U);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetVcselPulsePeriod(dev,
                                          VL53L0X_VCSEL_PERIOD_FINAL_RANGE,
                                          14U);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
     status = VL53L0X_SetDeviceAddress(dev, address);
-    if (status != VL53L0X_ERROR_NONE) {
+    if (status != VL53L0X_ERROR_NONE)
+    {
         return status;
     }
 
@@ -199,13 +219,13 @@ static uint8_t vl53l0x_init_rear_sensors(void)
     uint8_t status = VL53L0X_ERROR_NONE;
 
     status |= vl53l0x_init_rear_sensor(rear_right_handle,
-                                        XSHUT_4_GPIO_Port,
-                                        XSHUT_4_Pin,
-                                        0x58U);
+                                       XSHUT_4_GPIO_Port,
+                                       XSHUT_4_Pin,
+                                       0x58U);
     status |= vl53l0x_init_rear_sensor(rear_left_handle,
-                                        XSHUT_5_GPIO_Port,
-                                        XSHUT_5_Pin,
-                                        0x5AU);
+                                       XSHUT_5_GPIO_Port,
+                                       XSHUT_5_Pin,
+                                       0x5AU);
 
     return status;
 }
@@ -220,10 +240,9 @@ static uint8_t is_valid_target(uint16_t distance_mm)
 #if ROBOT_TOF_FAILURE_LED_DIAG_ENABLE
 static GPIO_PinState tof_debug_led_state(uint8_t target_detected, uint8_t failure_active)
 {
-    if (failure_active != 0U) {
-        return (((HAL_GetTick() / VL53L1_FAILURE_LED_BLINK_MS) & 1U) != 0U) ?
-               GPIO_PIN_SET :
-               GPIO_PIN_RESET;
+    if (failure_active != 0U)
+    {
+        return (((HAL_GetTick() / VL53L1_FAILURE_LED_BLINK_MS) & 1U) != 0U) ? GPIO_PIN_SET : GPIO_PIN_RESET;
     }
 
     return target_detected ? GPIO_PIN_SET : GPIO_PIN_RESET;
@@ -268,20 +287,25 @@ static uint16_t nearest_valid_distance(uint16_t left_mm,
 {
     uint16_t nearest = 0U;
 
-    if (is_valid_target(front_mm)) {
+    if (is_valid_target(front_mm))
+    {
         nearest = front_mm;
     }
-    if (is_valid_target(left_mm) && ((nearest == 0U) || (left_mm < nearest))) {
+    if (is_valid_target(left_mm) && ((nearest == 0U) || (left_mm < nearest)))
+    {
         nearest = left_mm;
     }
-    if (is_valid_target(right_mm) && ((nearest == 0U) || (right_mm < nearest))) {
+    if (is_valid_target(right_mm) && ((nearest == 0U) || (right_mm < nearest)))
+    {
         nearest = right_mm;
     }
     // ↓ removed duplicate right_mm block that was here
-    if (is_valid_target(rear_right_mm) && ((nearest == 0U) || (rear_right_mm < nearest))) {
+    if (is_valid_target(rear_right_mm) && ((nearest == 0U) || (rear_right_mm < nearest)))
+    {
         nearest = rear_right_mm;
     }
-    if (is_valid_target(rear_left_mm) && ((nearest == 0U) || (rear_left_mm < nearest))) {
+    if (is_valid_target(rear_left_mm) && ((nearest == 0U) || (rear_left_mm < nearest)))
+    {
         nearest = rear_left_mm;
     }
 
@@ -294,22 +318,29 @@ static void distance_sensor_update_one_failure_led_diag(uint8_t failed,
                                                         uint8_t *consecutive_successes,
                                                         uint8_t *failure_active)
 {
-    if (failed != 0U) {
-        if (*consecutive_failures < UINT8_MAX) {
+    if (failed != 0U)
+    {
+        if (*consecutive_failures < UINT8_MAX)
+        {
             (*consecutive_failures)++;
         }
         *consecutive_successes = 0U;
 
-        if (*consecutive_failures >= VL53L1_FAILURE_LED_THRESHOLD) {
+        if (*consecutive_failures >= VL53L1_FAILURE_LED_THRESHOLD)
+        {
             *failure_active = 1U;
         }
-    } else {
-        if (*consecutive_successes < UINT8_MAX) {
+    }
+    else
+    {
+        if (*consecutive_successes < UINT8_MAX)
+        {
             (*consecutive_successes)++;
         }
         *consecutive_failures = 0U;
 
-        if (*consecutive_successes >= VL53L1_FAILURE_LED_CLEAR_THRESHOLD) {
+        if (*consecutive_successes >= VL53L1_FAILURE_LED_CLEAR_THRESHOLD)
+        {
             *failure_active = 0U;
         }
     }
@@ -332,7 +363,7 @@ static void distance_sensor_update_failure_led_diag(uint8_t failure_mask)
 }
 #endif
 
-static uint8_t distance_sensor_start_vl53l1(void)
+uint8_t distance_sensor_start_vl53l1(void)
 {
     uint8_t success_count = 0U;
 
@@ -345,47 +376,53 @@ static uint8_t distance_sensor_start_vl53l1(void)
     distance_sensor_update_debug_leds(&last_status);
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
-    HAL_Delay(20U);
+    HAL_Delay(3U);
 
     uint8_t err;
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_SET);
-    HAL_Delay(20U);
+    HAL_Delay(2U);
     err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_LEFT);
     err |= VL53L1X_SensorInit(VL53L1__ADDR_LEFT);
-    if (err == 0U) {
+    if (err == 0U)
+    {
         err |= VL53L1X_SetDistanceMode(VL53L1__ADDR_LEFT, VL53L1__DISTANCE_MODE);
         err |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_LEFT, VL53L1__TIMING_BUDGET);
         err |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_LEFT, VL53L1__INTERMEASUREMENT);
         err |= VL53L1X_StartRanging(VL53L1__ADDR_LEFT);
-        if (err == 0U) {
+        if (err == 0U)
+        {
             success_count++;
         }
     }
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_2_Pin, GPIO_PIN_SET);
-    HAL_Delay(20U);
+    HAL_Delay(2U);
     err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_FRONT);
     err |= VL53L1X_SensorInit(VL53L1__ADDR_FRONT);
-    if (err == 0U) {
+    if (err == 0U)
+    {
         err |= VL53L1X_SetDistanceMode(VL53L1__ADDR_FRONT, VL53L1__DISTANCE_MODE);
         err |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR_FRONT, VL53L1__TIMING_BUDGET);
         err |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR_FRONT, VL53L1__INTERMEASUREMENT);
         err |= VL53L1X_StartRanging(VL53L1__ADDR_FRONT);
-        if (err == 0U) {
+        if (err == 0U)
+        {
             success_count++;
         }
     }
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_SET);
-    HAL_Delay(20U);
+    HAL_Delay(2U);
     err = VL53L1X_SensorInit(VL53L1__ADDR);
-    if (err == 0U) {
+    if (err == 0U)
+    {
         err |= VL53L1X_SetDistanceMode(VL53L1__ADDR, VL53L1__DISTANCE_MODE);
         err |= VL53L1X_SetTimingBudgetInMs(VL53L1__ADDR, VL53L1__TIMING_BUDGET);
         err |= VL53L1X_SetInterMeasurementInMs(VL53L1__ADDR, VL53L1__INTERMEASUREMENT);
         err |= VL53L1X_StartRanging(VL53L1__ADDR);
-        if (err == 0U) {
+        if (err == 0U)
+        {
             success_count++;
         }
     }
@@ -395,7 +432,8 @@ static uint8_t distance_sensor_start_vl53l1(void)
 
 static void distance_sensor_clear_cache(void)
 {
-    for (uint8_t i = 0U; i < (uint8_t)VL53L1_SENSOR_COUNT; i++) {
+    for (uint8_t i = 0U; i < (uint8_t)VL53L1_SENSOR_COUNT; i++)
+    {
         vl53l1_cache[i].distance_mm = 0U;
         vl53l1_cache[i].updated_ms = 0U;
         vl53l1_cache[i].has_value = 0U;
@@ -445,7 +483,8 @@ static void distance_sensor_pulse_i2c_clock(void)
 {
     distance_sensor_configure_i2c_gpio();
 
-    for (uint8_t i = 0U; i < VL53L1_I2C_RECOVERY_CLOCK_PULSES; i++) {
+    for (uint8_t i = 0U; i < VL53L1_I2C_RECOVERY_CLOCK_PULSES; i++)
+    {
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
         HAL_Delay(1U);
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
@@ -464,7 +503,8 @@ static void distance_sensor_recover_i2c_bus(void)
     distance_sensor_pulse_i2c_clock();
     (void)HAL_I2C_Init(&hi2c1);
 
-    if (__HAL_I2C_GET_FLAG(&hi2c1, I2C_FLAG_BUSY) != RESET) {
+    if (__HAL_I2C_GET_FLAG(&hi2c1, I2C_FLAG_BUSY) != RESET)
+    {
         (void)HAL_I2C_DeInit(&hi2c1);
         distance_sensor_pulse_i2c_clock();
         (void)HAL_I2C_Init(&hi2c1);
@@ -477,7 +517,8 @@ static void distance_sensor_recover_vl53l1(uint8_t recover_i2c)
     distance_sensor_update_debug_leds(&last_status);
     distance_sensor_signal_recovery();
 
-    if (recover_i2c != 0U) {
+    if (recover_i2c != 0U)
+    {
         distance_sensor_recover_i2c_bus();
     }
 
@@ -501,12 +542,14 @@ void distance_sensor_recover_during_edge_escape(void)
 #if ROBOT_TOF_EDGE_ESCAPE_RECOVERY_ENABLE
     const uint32_t now_ms = HAL_GetTick();
 
-    if (distance_sensor_needs_recovery() == 0U) {
+    if (distance_sensor_needs_recovery() == 0U)
+    {
         return;
     }
 
     if ((vl53l1_last_edge_escape_recovery_ms != 0U) &&
-        ((now_ms - vl53l1_last_edge_escape_recovery_ms) < VL53L1_EDGE_ESCAPE_RECOVERY_PERIOD_MS)) {
+        ((now_ms - vl53l1_last_edge_escape_recovery_ms) < VL53L1_EDGE_ESCAPE_RECOVERY_PERIOD_MS))
+    {
         return;
     }
     vl53l1_last_edge_escape_recovery_ms = now_ms;
@@ -522,7 +565,8 @@ void distance_sensor_recover_during_edge_escape(void)
     distance_sensor_recover_vl53l1(recover_i2c);
 
 #if ROBOT_TOF_FAILURE_LED_DIAG_ENABLE
-    if (is_initialized != 0U) {
+    if (is_initialized != 0U)
+    {
         distance_sensor_clear_failure_led_diag();
         distance_sensor_update_debug_leds(&last_status);
     }
@@ -539,7 +583,8 @@ static uint8_t distance_sensor_use_reading(vl53l1_sensor_index_t sensor,
 {
     vl53l1_sensor_cache_t *cache = &vl53l1_cache[sensor];
 
-    if ((failure_mask & sensor_failure_bit) == 0U) {
+    if ((failure_mask & sensor_failure_bit) == 0U)
+    {
         cache->distance_mm = raw_distance_mm;
         cache->updated_ms = now_ms;
         cache->has_value = 1U;
@@ -548,13 +593,17 @@ static uint8_t distance_sensor_use_reading(vl53l1_sensor_index_t sensor,
         return 0U;
     }
 
-    if (cache->consecutive_failures < UINT8_MAX) {
+    if (cache->consecutive_failures < UINT8_MAX)
+    {
         cache->consecutive_failures++;
     }
 
-    if ((cache->has_value != 0U) && ((now_ms - cache->updated_ms) <= VL53L1_STALE_HOLD_MS)) {
+    if ((cache->has_value != 0U) && ((now_ms - cache->updated_ms) <= VL53L1_STALE_HOLD_MS))
+    {
         *distance_mm = cache->distance_mm;
-    } else {
+    }
+    else
+    {
         *distance_mm = 0U;
     }
 
@@ -563,227 +612,258 @@ static uint8_t distance_sensor_use_reading(vl53l1_sensor_index_t sensor,
 
 void distance_sensor_init(void)
 {
-//    is_initialized = 0U;
-//    vl53l1_fault_active = 0U;
-//
-//    last_status.front = 0U;
-//    last_status.left = 0U;
-//    last_status.right = 0U;
-//    last_status.rear_right = 0U;
-//    last_status.rear_left = 0U;
-//    last_status.distance_mm = 0U;
-//    distance_sensor_clear_cache();
-//    distance_sensor_update_debug_leds(&last_status);
-//
-//#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
-//    if (vl53l0x_init_rear_sensors() != VL53L0X_ERROR_NONE) {
-//        vl53l1_fault_active = 1U;
-//        distance_sensor_update_debug_leds(&last_status);
-//    }
-//#endif
-//
-//    if (distance_sensor_start_vl53l1() > 0U) {
-//        is_initialized = 1U;
-//    } else {
-//        vl53l1_fault_active = 1U;
-//        distance_sensor_update_debug_leds(&last_status);
-//    }
-//
-//    vl53l1_last_poll_ms = 0U;
-// ====================
-//	is_initialized = 0U;
-//	    vl53l1_fault_active = 0U;
-//	    distance_sensor_clear_cache();
-//
-//	    // 1. Force ALL XSHUT lines LOW to turn off every single sensor on the robot
-//	    HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
-//	    HAL_GPIO_WritePin(XSHUT_4_GPIO_Port, XSHUT_4_Pin, GPIO_PIN_RESET);
-//	    HAL_GPIO_WritePin(XSHUT_5_GPIO_Port, XSHUT_5_Pin, GPIO_PIN_RESET);
-//	    HAL_Delay(50U); // Let them fully power down
-//
-//	    // 2. Initialize the front VL53L1X array first (this steps through pins 1, 2, and 3 internally)
-//	    if (distance_sensor_start_vl53l1() > 0U) {
-//	        is_initialized = 1U;
-//	    } else {
-//	        vl53l1_fault_active = 1U;
-//	    }
-//
-//	#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
-//	    // 3. Now that the front sensors have custom addresses assigned, initialize the rear ones
-//	    // Remove the reset lines inside vl53l0x_init_rear_sensor so they don't break the bus!
-//	    if (vl53l0x_init_rear_sensors() != VL53L0X_ERROR_NONE) {
-//	        vl53l1_fault_active = 1U;
-//	    }
-//	#endif
-//
-//	    distance_sensor_update_debug_leds(&last_status);
-//	    vl53l1_last_poll_ms = 0U;
+    //    is_initialized = 0U;
+    //    vl53l1_fault_active = 0U;
+    //
+    //    last_status.front = 0U;
+    //    last_status.left = 0U;
+    //    last_status.right = 0U;
+    //    last_status.rear_right = 0U;
+    //    last_status.rear_left = 0U;
+    //    last_status.distance_mm = 0U;
+    //    distance_sensor_clear_cache();
+    //    distance_sensor_update_debug_leds(&last_status);
+    //
+    // #if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
+    //    if (vl53l0x_init_rear_sensors() != VL53L0X_ERROR_NONE) {
+    //        vl53l1_fault_active = 1U;
+    //        distance_sensor_update_debug_leds(&last_status);
+    //    }
+    // #endif
+    //
+    //    if (distance_sensor_start_vl53l1() > 0U) {
+    //        is_initialized = 1U;
+    //    } else {
+    //        vl53l1_fault_active = 1U;
+    //        distance_sensor_update_debug_leds(&last_status);
+    //    }
+    //
+    //    vl53l1_last_poll_ms = 0U;
+    // ====================
+    //	is_initialized = 0U;
+    //	    vl53l1_fault_active = 0U;
+    //	    distance_sensor_clear_cache();
+    //
+    //	    // 1. Force ALL XSHUT lines LOW to turn off every single sensor on the robot
+    //	    HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
+    //	    HAL_GPIO_WritePin(XSHUT_4_GPIO_Port, XSHUT_4_Pin, GPIO_PIN_RESET);
+    //	    HAL_GPIO_WritePin(XSHUT_5_GPIO_Port, XSHUT_5_Pin, GPIO_PIN_RESET);
+    //	    HAL_Delay(50U); // Let them fully power down
+    //
+    //	    // 2. Initialize the front VL53L1X array first (this steps through pins 1, 2, and 3 internally)
+    //	    if (distance_sensor_start_vl53l1() > 0U) {
+    //	        is_initialized = 1U;
+    //	    } else {
+    //	        vl53l1_fault_active = 1U;
+    //	    }
+    //
+    //	#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
+    //	    // 3. Now that the front sensors have custom addresses assigned, initialize the rear ones
+    //	    // Remove the reset lines inside vl53l0x_init_rear_sensor so they don't break the bus!
+    //	    if (vl53l0x_init_rear_sensors() != VL53L0X_ERROR_NONE) {
+    //	        vl53l1_fault_active = 1U;
+    //	    }
+    //	#endif
+    //
+    //	    distance_sensor_update_debug_leds(&last_status);
+    //	    vl53l1_last_poll_ms = 0U;
 
-	    is_initialized = 0U;
-	    vl53l1_fault_active = 0U;
-	    vl53l1_last_edge_escape_recovery_ms = 0U;
+    is_initialized = 0U;
+    vl53l1_fault_active = 0U;
+    vl53l1_last_edge_escape_recovery_ms = 0U;
 
-	    last_status.front = 0U;
-	    last_status.left = 0U;
-	    last_status.right = 0U;
-	    last_status.rear_right = 0U;
-	    last_status.rear_left = 0U;
-	    last_status.distance_mm = 0U;
+    last_status.front = 0U;
+    last_status.left = 0U;
+    last_status.right = 0U;
+    last_status.rear_right = 0U;
+    last_status.rear_left = 0U;
+    last_status.distance_mm = 0U;
 #if ROBOT_TOF_FAILURE_LED_DIAG_ENABLE
-	    distance_sensor_clear_failure_led_diag();
+    distance_sensor_clear_failure_led_diag();
 #endif
-	    distance_sensor_update_debug_leds(&last_status);
+    distance_sensor_update_debug_leds(&last_status);
 
-	    LOG_PRINT("\r\n--- Initializing Distance Sensors ---\r\n");
+    LOG_PRINT("\r\n--- Initializing Distance Sensors ---\r\n");
 
-	    if (distance_sensor_start_vl53l1() > 0U) {
-	        is_initialized = 1U;
-	        LOG_PRINT("[Sensors] Active and Ready!\r\n");
-	    } else {
-	        vl53l1_fault_active = 1U;
-	        distance_sensor_signal_recovery();
-	    }
+    if (distance_sensor_start_vl53l1() > 0U)
+    {
+        is_initialized = 1U;
+        LOG_PRINT("[Sensors] Active and Ready!\r\n");
+    }
+    else
+    {
+        vl53l1_fault_active = 1U;
+        distance_sensor_signal_recovery();
+    }
 }
+
+uint16_t left_mm = 8191U, front_mm = 8191U, right_mm = 8191U;
+uint16_t dummy = 0U;
+
+uint32_t failure_count = 0U;
 
 opponent_status_t distance_sensor_read_opponent(void)
 {
-//    uint16_t raw_left_mm = 0U, raw_front_mm = 0U, raw_right_mm = 0U;
-//    uint16_t left_mm = 0U, front_mm = 0U, right_mm = 0U;
-//    uint16_t rear_right_mm = 8191U, rear_left_mm = 8191U;
-//    uint16_t dummy = 0U;
-//    uint8_t failure_mask;
-//    uint8_t read_failed = 0U;
-//    const uint32_t now_ms = HAL_GetTick();
-//
-//    if (is_initialized == 0U) {
-//        distance_sensor_recover_vl53l1(1U);
-//        distance_sensor_update_debug_leds(&last_status);
-//        return last_status;
-//    }
-//
-//    if (((now_ms - vl53l1_last_poll_ms) < VL53L1_POLL_PERIOD_MS) &&
-//        (distance_sensor_has_all_cached_readings() != 0U)) {
-//        left_mm = vl53l1_cache[VL53L1_SENSOR_LEFT].distance_mm;
-//        front_mm = vl53l1_cache[VL53L1_SENSOR_FRONT].distance_mm;
-//        right_mm = vl53l1_cache[VL53L1_SENSOR_RIGHT].distance_mm;
-//    } else {
-//        vl53l1_last_poll_ms = now_ms;
-//        failure_mask = VL53L1__ReadAll(&raw_left_mm, &raw_front_mm, &raw_right_mm, &dummy, &dummy);
-//        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_LEFT,
-//                                                   failure_mask,
-//                                                   VL53L1_FAILURE_LEFT,
-//                                                   raw_left_mm,
-//                                                   now_ms,
-//                                                   &left_mm);
-//        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_FRONT,
-//                                                   failure_mask,
-//                                                   VL53L1_FAILURE_FRONT,
-//                                                   raw_front_mm,
-//                                                   now_ms,
-//                                                   &front_mm);
-//        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_RIGHT,
-//                                                   failure_mask,
-//                                                   VL53L1_FAILURE_RIGHT,
-//                                                   raw_right_mm,
-//                                                   now_ms,
-//                                                   &right_mm);
-//
-//        if ((failure_mask & VL53L1_FAILURE_ALL) == VL53L1_FAILURE_ALL) {
-//            distance_sensor_recover_vl53l1(1U);
-//        } else if ((vl53l1_cache[VL53L1_SENSOR_LEFT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
-//                   (vl53l1_cache[VL53L1_SENSOR_FRONT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
-//                   (vl53l1_cache[VL53L1_SENSOR_RIGHT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD)) {
-//            distance_sensor_recover_vl53l1(0U);
-//        }
-//    }
+    //    uint16_t raw_left_mm = 0U, raw_front_mm = 0U, raw_right_mm = 0U;
+    //    uint16_t left_mm = 0U, front_mm = 0U, right_mm = 0U;
+    //    uint16_t rear_right_mm = 8191U, rear_left_mm = 8191U;
+    //    uint16_t dummy = 0U;
+    //    uint8_t failure_mask;
+    //    uint8_t read_failed = 0U;
+    //    const uint32_t now_ms = HAL_GetTick();
+    //
+    //    if (is_initialized == 0U) {
+    //        distance_sensor_recover_vl53l1(1U);
+    //        distance_sensor_update_debug_leds(&last_status);
+    //        return last_status;
+    //    }
+    //
+    //    if (((now_ms - vl53l1_last_poll_ms) < VL53L1_POLL_PERIOD_MS) &&
+    //        (distance_sensor_has_all_cached_readings() != 0U)) {
+    //        left_mm = vl53l1_cache[VL53L1_SENSOR_LEFT].distance_mm;
+    //        front_mm = vl53l1_cache[VL53L1_SENSOR_FRONT].distance_mm;
+    //        right_mm = vl53l1_cache[VL53L1_SENSOR_RIGHT].distance_mm;
+    //    } else {
+    //        vl53l1_last_poll_ms = now_ms;
+    //        failure_mask = VL53L1__ReadAll(&raw_left_mm, &raw_front_mm, &raw_right_mm, &dummy, &dummy);
+    //        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_LEFT,
+    //                                                   failure_mask,
+    //                                                   VL53L1_FAILURE_LEFT,
+    //                                                   raw_left_mm,
+    //                                                   now_ms,
+    //                                                   &left_mm);
+    //        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_FRONT,
+    //                                                   failure_mask,
+    //                                                   VL53L1_FAILURE_FRONT,
+    //                                                   raw_front_mm,
+    //                                                   now_ms,
+    //                                                   &front_mm);
+    //        read_failed |= distance_sensor_use_reading(VL53L1_SENSOR_RIGHT,
+    //                                                   failure_mask,
+    //                                                   VL53L1_FAILURE_RIGHT,
+    //                                                   raw_right_mm,
+    //                                                   now_ms,
+    //                                                   &right_mm);
+    //
+    //        if ((failure_mask & VL53L1_FAILURE_ALL) == VL53L1_FAILURE_ALL) {
+    //            distance_sensor_recover_vl53l1(1U);
+    //        } else if ((vl53l1_cache[VL53L1_SENSOR_LEFT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
+    //                   (vl53l1_cache[VL53L1_SENSOR_FRONT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD) ||
+    //                   (vl53l1_cache[VL53L1_SENSOR_RIGHT].consecutive_failures >= VL53L1_FAILURE_RECOVERY_THRESHOLD)) {
+    //            distance_sensor_recover_vl53l1(0U);
+    //        }
+    //    }
 
-//#if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
-//    rear_right_mm = vl53l0x_read_distance(rear_right_handle);
-//    rear_left_mm = vl53l0x_read_distance(rear_left_handle);
-//#else
-//    rear_right_mm = 0U;
-//    rear_left_mm = 0U;
-//#endif
-//
-//    last_status.left = is_valid_target(left_mm);
-//    last_status.front = is_valid_target(front_mm);
-//    last_status.right = is_valid_target(right_mm);
-//    last_status.rear_right = is_valid_target(rear_right_mm);
-//    last_status.rear_left = is_valid_target(rear_left_mm);
-//    last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, rear_right_mm, rear_left_mm);
-//
-//    if (read_failed == 0U) {
-//        vl53l1_fault_active = 0U;
-//    }
-//    distance_sensor_update_debug_leds(&last_status);
-//
-//    return last_status;
-//}
+    // #if DISTANCE_SENSOR_ENABLE_REAR_VL53L0X
+    //     rear_right_mm = vl53l0x_read_distance(rear_right_handle);
+    //     rear_left_mm = vl53l0x_read_distance(rear_left_handle);
+    // #else
+    //     rear_right_mm = 0U;
+    //     rear_left_mm = 0U;
+    // #endif
+    //
+    //     last_status.left = is_valid_target(left_mm);
+    //     last_status.front = is_valid_target(front_mm);
+    //     last_status.right = is_valid_target(right_mm);
+    //     last_status.rear_right = is_valid_target(rear_right_mm);
+    //     last_status.rear_left = is_valid_target(rear_left_mm);
+    //     last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, rear_right_mm, rear_left_mm);
+    //
+    //     if (read_failed == 0U) {
+    //         vl53l1_fault_active = 0U;
+    //     }
+    //     distance_sensor_update_debug_leds(&last_status);
+    //
+    //     return last_status;
+    // }
 
-  uint16_t left_mm = 8191U, front_mm = 8191U, right_mm = 8191U;
-  uint16_t dummy = 0U;
-  const uint32_t now_ms = HAL_GetTick();
+    const uint32_t now_ms = HAL_GetTick();
 
-  if (is_initialized == 0U) {
-      return last_status;
-  }
+    if (is_initialized == 0U)
+    {
+        return last_status;
+    }
 
-  if ((vl53l1_last_poll_ms != 0U) &&
-      ((now_ms - vl53l1_last_poll_ms) < VL53L1_POLL_PERIOD_MS)) {
-      distance_sensor_update_debug_leds(&last_status);
-      return last_status;
-  }
-  vl53l1_last_poll_ms = now_ms;
+    if ((vl53l1_last_poll_ms != 0U) &&
+        ((now_ms - vl53l1_last_poll_ms) < VL53L1_POLL_PERIOD_MS))
+    {
+        distance_sensor_update_debug_leds(&last_status);
+        return last_status;
+    }
+    vl53l1_last_poll_ms = now_ms;
 
-  // 1. Read L1X (Left, Front, Right)
-  const uint8_t failure_mask = VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
-  vl53l1_fault_active = (failure_mask != 0U) ? 1U : 0U;
+    // 1. Read L1X (Left, Front, Right)
+    const uint8_t failure_mask = VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
+
+    if (failure_mask != 0U)
+    {
+        failure_count++;
+        // distance_sensor_start_vl53l1();
+        // return last_status;
+    }
+
+    vl53l1_fault_active = (failure_mask != 0U) ? 1U : 0U;
 #if ROBOT_TOF_FAILURE_LED_DIAG_ENABLE
-  distance_sensor_update_failure_led_diag(failure_mask);
+    distance_sensor_update_failure_led_diag(failure_mask);
 #endif
 
-  if ((failure_mask & VL53L1_FAILURE_LEFT) != 0U) {
-      left_mm = 8191U;
-  }
-  if ((failure_mask & VL53L1_FAILURE_FRONT) != 0U) {
-      front_mm = 8191U;
-  }
-  if ((failure_mask & VL53L1_FAILURE_RIGHT) != 0U) {
-      right_mm = 8191U;
-  }
+    if ((failure_mask & VL53L1_FAILURE_LEFT) != 0U)
+    {
+        left_mm = 8191U;
+    }
+    if ((failure_mask & VL53L1_FAILURE_FRONT) != 0U)
+    {
+        front_mm = 8191U;
+    }
+    if ((failure_mask & VL53L1_FAILURE_RIGHT) != 0U)
+    {
+        right_mm = 8191U;
+    }
 
-  last_status.left = is_valid_target(left_mm);
-  last_status.front = is_valid_target(front_mm);
-  last_status.right = is_valid_target(right_mm);
-  last_status.rear_right = 0U;
-  last_status.rear_left = 0U;
-  last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, 0U, 0U);
+    last_status.left = is_valid_target(left_mm);
+    last_status.front = is_valid_target(front_mm);
+    last_status.right = is_valid_target(right_mm);
+    last_status.rear_right = 0U;
+    last_status.rear_left = 0U;
+    last_status.distance_mm = nearest_valid_distance(left_mm, front_mm, right_mm, 0U, 0U);
 
-  distance_sensor_update_debug_leds(&last_status);
+    distance_sensor_update_debug_leds(&last_status);
 
-  return last_status;
+    return last_status;
 }
 
 void TOF_debug(void)
 {
-	if ((last_status.front != 0U) && (last_status.distance_mm > 0U)) {
-		LOG_PRINT("%u front,\r\n", last_status.distance_mm);
-	} else if ((last_status.left != 0U) && (last_status.distance_mm > 0U)) {
-    	LOG_PRINT("%u left,\r\n", last_status.distance_mm);
-	} else if ((last_status.right != 0U) && (last_status.distance_mm > 0U)) {
-    	LOG_PRINT("%u right,\r\n", last_status.distance_mm);
-	} else if ((last_status.rear_left != 0U) && (last_status.distance_mm > 0U)) {
-    	LOG_PRINT("%u rear left,\r\n", last_status.distance_mm);
-	} else if ((last_status.rear_right != 0U) && (last_status.distance_mm > 0U)) {
-    	LOG_PRINT("%u rear right,\r\n", last_status.distance_mm);
-	} else {
-		LOG_PRINT("OUT OF SCOPE\r\n");
-	}
+    if ((last_status.front != 0U) && (last_status.distance_mm > 0U))
+    {
+        LOG_PRINT("%u front,\r\n", last_status.distance_mm);
+    }
+    else if ((last_status.left != 0U) && (last_status.distance_mm > 0U))
+    {
+        LOG_PRINT("%u left,\r\n", last_status.distance_mm);
+    }
+    else if ((last_status.right != 0U) && (last_status.distance_mm > 0U))
+    {
+        LOG_PRINT("%u right,\r\n", last_status.distance_mm);
+    }
+    else if ((last_status.rear_left != 0U) && (last_status.distance_mm > 0U))
+    {
+        LOG_PRINT("%u rear left,\r\n", last_status.distance_mm);
+    }
+    else if ((last_status.rear_right != 0U) && (last_status.distance_mm > 0U))
+    {
+        LOG_PRINT("%u rear right,\r\n", last_status.distance_mm);
+    }
+    else
+    {
+        LOG_PRINT("OUT OF SCOPE\r\n");
+    }
 }
 
 uint16_t front_mm_return(void)
 {
-    if ((last_status.front != 0U) && (last_status.distance_mm > 0U)) {
+    if ((last_status.front != 0U) && (last_status.distance_mm > 0U))
+    {
         return last_status.distance_mm;
     }
 

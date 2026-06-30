@@ -9,6 +9,8 @@
 #include "robot_config.h"
 #include "usart1_log.h"
 #include "vesc/vescuart.h"
+#include "VL53L1X_api.h"
+#include "vl53l1_platform.h"
 
 #define EDGE_TEST ROBOT_EDGE_SENSOR_ENABLE
 #define OPPONENT_TEST 1
@@ -392,30 +394,35 @@ void state_machine_update(void)
 
     #if OPPONENT_TEST
     case ROBOT_STATE_ATTACK:
-
         //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
     	int front_mm = front_mm_return();
     	if (front_mm <= 700){
-    		motor_control_set_pwm(2250, 2250);
+    		// motor_control_set_pwm(2250, 2250);
     	}
+
+        if (distance_sensor_needs_recovery()) {
+        	distance_sensor_recover_during_edge_escape();
+    	}
+
+
         //LOG_PRINT("Attacking\n");
         opponent_debug_leds(&opponent);
         break;
 
     case ROBOT_STATE_TRACK_LEFT:
     	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(2150, 1000);
+        motor_control_set_pwm(1950, 1200);
         break;
 
     case ROBOT_STATE_TRACK_RIGHT:
     	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(1000, 2150);
+        motor_control_set_pwm(1200, 1950);
         break;
 
     case ROBOT_STATE_SEARCH:
     	opponent_debug_leds(&opponent);
 
-        motor_control_set_pwm(2150, 2150);
+        motor_control_set_pwm(1500, 1500);
         break;
     #else
     case ROBOT_STATE_SEARCH:

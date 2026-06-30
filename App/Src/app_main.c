@@ -112,9 +112,17 @@ int __io_getchar(void)
 
 #endif /* ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE */
 
+uint32_t current_time = 0U; 
+uint32_t previous_time = 0U;
+uint32_t delta = 0U;
+
 void app_main(void)
 {
+
+
     uint32_t last_update_ms = HAL_GetTick();
+
+    
 
     LOG_PRINT("USART1 logging ready\r\n");
 
@@ -239,6 +247,9 @@ void app_main(void)
         if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
             last_update_ms = now_ms;
             robot_update();  /* State machine runs here */
+            current_time = HAL_GetTick();
+            delta = current_time - previous_time;
+            previous_time = current_time;
         }
 
         /* Background tasks (sensor polling, etc.) */

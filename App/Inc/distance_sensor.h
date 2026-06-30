@@ -4,6 +4,7 @@
 #include "robot_types.h"
 
 void distance_sensor_init(void);
+uint8_t distance_sensor_start_vl53l1(void);
 opponent_status_t distance_sensor_read_opponent(void);
 uint8_t distance_sensor_needs_recovery(void);
 void distance_sensor_recover_during_edge_escape(void);
