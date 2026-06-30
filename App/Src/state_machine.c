@@ -397,13 +397,8 @@ void state_machine_update(void)
         //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
     	int front_mm = front_mm_return();
     	if (front_mm <= 700){
-    		// motor_control_set_pwm(2250, 2250);
+    		motor_control_set_pwm(1500, 1500);
     	}
-
-        if (distance_sensor_needs_recovery()) {
-        	distance_sensor_recover_during_edge_escape();
-    	}
-
 
         //LOG_PRINT("Attacking\n");
         opponent_debug_leds(&opponent);
@@ -422,7 +417,14 @@ void state_machine_update(void)
     case ROBOT_STATE_SEARCH:
     	opponent_debug_leds(&opponent);
 
-        motor_control_set_pwm(1500, 1500);
+        if (distance_sensor_needs_recovery()) {
+        	motor_control_set_pwm(1500, 1500);
+        	motor_control_update();
+        	distance_sensor_recover_during_edge_escape();
+        	break;
+        }
+
+        // motor_control_set_pwm(1500, 1500);
         break;
     #else
     case ROBOT_STATE_SEARCH:

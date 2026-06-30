@@ -700,7 +700,9 @@ void distance_sensor_init(void)
 uint16_t left_mm = 8191U, front_mm = 8191U, right_mm = 8191U;
 uint16_t dummy = 0U;
 
-uint32_t failure_count = 0U;
+uint32_t left_failure_count = 0U;
+uint32_t front_failure_count = 0U;
+uint32_t right_failure_count = 0U;
 
 opponent_status_t distance_sensor_read_opponent(void)
 {
@@ -795,11 +797,22 @@ opponent_status_t distance_sensor_read_opponent(void)
     // 1. Read L1X (Left, Front, Right)
     const uint8_t failure_mask = VL53L1__ReadAll(&left_mm, &front_mm, &right_mm, &dummy, &dummy);
 
-    if (failure_mask != 0U)
-    {
-        failure_count++;
-        // distance_sensor_start_vl53l1();
-        // return last_status;
+    if ((failure_mask & VL53L1_FAILURE_LEFT) != 0U) {
+        left_failure_count++;
+    } else {
+        left_failure_count = 0;
+    }
+
+    if ((failure_mask & VL53L1_FAILURE_FRONT) != 0U) {
+        front_failure_count++;
+    } else {
+        front_failure_count = 0;
+    }
+
+    if ((failure_mask & VL53L1_FAILURE_RIGHT) != 0U) {
+        right_failure_count++;
+    } else {
+        right_failure_count = 0;
     }
 
     vl53l1_fault_active = (failure_mask != 0U) ? 1U : 0U;

@@ -350,15 +350,16 @@ uint8_t VL53L1__InitAll(void) {
     uint8_t  dataReady = 0;
     uint32_t t = HAL_GetTick();
 
-    while (!dataReady) {
-        if (VL53L1X_CheckForDataReady(addr, &dataReady) != 0) {
-            return 1U;
-        }
-        if ((HAL_GetTick() - t) > 3U) {
-            return 1U;
-        }
-        HAL_Delay(1);
-    }
+	// Experimental by Lim Zing! Disabble Disable ready check
+    // while (!dataReady) {
+    //     if (VL53L1X_CheckForDataReady(addr, &dataReady) != 0) {
+    //         return 1U;
+    //     }
+    //     if ((HAL_GetTick() - t) > 3U) {
+    //         return 1U;
+    //     }
+    //     HAL_Delay(1);
+    // }
 
     uint8_t  rangeStatus;
     uint16_t distance;
