@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "robot.h"
+#include "led.h"
 #include "robot_config.h"
 #include "usart1_log.h"
 #include "game_mode_selector.h"
@@ -224,49 +225,73 @@ void app_main(void)
     LOG_PRINT("--- GAME LOOP PHASE ---\r\n");
     LOG_PRINT("========================================\r\n");
 
-    while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_SET) {
-        const uint32_t now_ms = HAL_GetTick();
+    while(1){
 
-#if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
-        const opponent_status_t tofData = distance_sensor_read_opponent();
-        static uint32_t last_sensor_log_ms = 0U;
+        if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_SET) {
+            const uint32_t now_ms = HAL_GetTick();
 
-        if ((now_ms - last_sensor_log_ms) >= 200U) {
-            last_sensor_log_ms = now_ms;
-            LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
-                      (int)tofData.front,
-                      (int)tofData.left,
-                      (int)tofData.right,
-                      (int)tofData.rear_right,
-                      (int)tofData.rear_left,
-                      (unsigned int)tofData.distance_mm);
+            #if ROBOT_ACTIVE_MODE == ROBOT_MODE_LOGGING_ENABLE
+            const opponent_status_t tofData = distance_sensor_read_opponent();
+            static uint32_t last_sensor_log_ms = 0U;
+
+            if ((now_ms - last_sensor_log_ms) >= 200U) {
+                last_sensor_log_ms = now_ms;
+                LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                        (int)tofData.front,
+                        (int)tofData.left,
+                        (int)tofData.right,
+                        (int)tofData.rear_right,
+                        (int)tofData.rear_left,
+                        (unsigned int)tofData.distance_mm);
+            }
+            #endif
+
+            /* State machine and motor control at fixed interval */
+            if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
+                last_update_ms = now_ms;
+                robot_update();  /* State machine runs here */
+                current_time = HAL_GetTick();
+                delta = current_time - previous_time;
+                previous_time = current_time;
+            }
+
+            /* Background tasks (sensor polling, etc.) */
+            robot_background();
         }
-#endif
+        else {
 
-        /* State machine and motor control at fixed interval */
-        if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
-            last_update_ms = now_ms;
-            robot_update();  /* State machine runs here */
-            current_time = HAL_GetTick();
-            delta = current_time - previous_time;
-            previous_time = current_time;
-        }
+            LOG_PRINT("\nSM_Signal_Pin went LOW. Round ended.\r\n");
 
-        /* Background tasks (sensor polling, etc.) */
-        robot_background();
-    }
+            /* ===== PHASE 5: CLEANUP FOR NEXT ROUND ===== */
+            LOG_PRINT("\n--- CLEANUP PHASE ---\r\n");
 
-
-
-    LOG_PRINT("\nSM_Signal_Pin went LOW. Round ended.\r\n");
-
-    /* ===== PHASE 5: CLEANUP FOR NEXT ROUND ===== */
-    LOG_PRINT("\n--- CLEANUP PHASE ---\r\n");
-    motor_control_stop();
+            motor_control_stop();
+            motor_control_update();
 #if ROBOT_GAME_MODE_SELECTOR_ENABLE
-    game_mode_selector_reset_for_new_round();
+            game_mode_selector_reset_for_new_round();
 #endif
 
-    LOG_PRINT("Reset complete. Ready for next round.\r\n");
+            for (uint8_t i = 0U; i < 3U; i++) {
+                HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_SET);
+                HAL_Delay(100);
+                HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_RESET);
+                HAL_Delay(100);
+            }
+
+            LOG_PRINT("Reset complete. Ready for next round.\r\n");
+
+            while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+                HAL_Delay(10);
+                robot_background();
+            }
+
+            last_update_ms = HAL_GetTick();
+            previous_time = last_update_ms;
+        }
+    }
 }
 

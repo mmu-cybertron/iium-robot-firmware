@@ -27,6 +27,8 @@ extern UART_HandleTypeDef huart2;
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
+static uint16_t is_attack = 0;
+
 static uint32_t current_time = 0;
 static uint32_t escape_start_time = 0;
 static uint32_t opponent_track_start_ms = 0;
@@ -100,23 +102,24 @@ static void edge_escape_begin(robot_edge_escape_mode_t escape_mode)
 
 static void edge_escape_drive_turn(robot_edge_escape_mode_t escape_mode)
 {
-	switch (escape_mode) {
-		case ROBOT_ESCAPE_BACK_LEFT:
-			motor_control_set_pwm(2150, 1000);
-			break;
-		case ROBOT_ESCAPE_BACK_RIGHT:
-			motor_control_set_pwm(1000, 2150);
-			break;
-		case ROBOT_ESCAPE_BACK:
-			motor_control_set_pwm(900, 900);
-			break;
-		case ROBOT_ESCAPE_FRONT:
-			motor_control_set_pwm(2250, 2250);
-			break;
-		case ROBOT_ESCAPE_NONE:
-		default:
-			motor_control_stop();
-			break;
+	switch (escape_mode)
+	{
+	case ROBOT_ESCAPE_BACK_LEFT:
+		motor_control_set_pwm(2150, 1000);
+		break;
+	case ROBOT_ESCAPE_BACK_RIGHT:
+		motor_control_set_pwm(1000, 2150);
+		break;
+	case ROBOT_ESCAPE_BACK:
+		motor_control_set_pwm(900, 900);
+		break;
+	case ROBOT_ESCAPE_FRONT:
+		motor_control_set_pwm(2250, 2250);
+		break;
+	case ROBOT_ESCAPE_NONE:
+	default:
+		motor_control_stop();
+		break;
 	}
 }
 
@@ -127,14 +130,15 @@ static void edge_escape_execute_blocking(void)
 
 	current_state = ROBOT_STATE_EDGE_ESCAPE;
 
-    motor_control_set_pwm(1500, 1500);
-    motor_control_update();
+	motor_control_set_pwm(1500, 1500);
+	motor_control_update();
 	motor_control_set_pwm(900, 900);
 	motor_control_update();
 	const uint32_t recovery_start_ms = HAL_GetTick();
 	distance_sensor_recover_during_edge_escape();
 	const uint32_t recovery_elapsed_ms = HAL_GetTick() - recovery_start_ms;
-	if (recovery_elapsed_ms < EDGE_ESCAPE_BACKUP_MS) {
+	if (recovery_elapsed_ms < EDGE_ESCAPE_BACKUP_MS)
+	{
 		HAL_Delay(EDGE_ESCAPE_BACKUP_MS - recovery_elapsed_ms);
 	}
 
@@ -148,7 +152,6 @@ static void edge_escape_execute_blocking(void)
 	current_state = ROBOT_STATE_SEARCH;
 	motor_control_set_pwm(2150, 2150);
 }
-
 
 static void edge_process_detection(void)
 {
@@ -188,7 +191,6 @@ static void edge_process_detection(void)
 									 IR1_EDGE_DETECTED_STATE,
 									 ROBOT_ESCAPE_BACK_RIGHT);
 #endif
-
 }
 
 static void edge_process_analog_detection(const edge_status_t *edge)
@@ -215,75 +217,75 @@ static void edge_process_analog_detection(const edge_status_t *edge)
 
 static void vesc_stop_all(void)
 {
-    VescUart_SetCurrent(&vesc1, 0.0f);
-    VescUart_SetCurrent(&vesc2, 0.0f);
-    VescUart_SetDuty(&vesc1, 0.0f);
-    VescUart_SetDuty(&vesc2, 0.0f);
+	VescUart_SetCurrent(&vesc1, 0.0f);
+	VescUart_SetCurrent(&vesc2, 0.0f);
+	VescUart_SetDuty(&vesc1, 0.0f);
+	VescUart_SetDuty(&vesc2, 0.0f);
 }
 
 static uint8_t vesc_is_overcurrent_fault(mc_fault_code fault)
 {
-    return (uint8_t)(fault == FAULT_CODE_ABS_OVER_CURRENT);
+	return (uint8_t)(fault == FAULT_CODE_ABS_OVER_CURRENT);
 }
 
 static uint8_t vesc_check_overcurrent_fault(void)
 {
-    const uint32_t current_time = HAL_GetTick();
+	const uint32_t current_time = HAL_GetTick();
 
-    if ((current_time - last_vesc_fault_poll_time) < VESC_FAULT_POLL_PERIOD_MS)
-    {
-        return 0U;
-    }
+	if ((current_time - last_vesc_fault_poll_time) < VESC_FAULT_POLL_PERIOD_MS)
+	{
+		return 0U;
+	}
 
-    last_vesc_fault_poll_time = current_time;
+	last_vesc_fault_poll_time = current_time;
 
-    const uint8_t vesc1_values_ok = VescUart_GetVescValues(&vesc1) ? 1U : 0U;
-    const uint8_t vesc2_values_ok = VescUart_GetVescValues(&vesc2) ? 1U : 0U;
+	const uint8_t vesc1_values_ok = VescUart_GetVescValues(&vesc1) ? 1U : 0U;
+	const uint8_t vesc2_values_ok = VescUart_GetVescValues(&vesc2) ? 1U : 0U;
 
-    if (vesc1_values_ok && vesc_is_overcurrent_fault(vesc1.data.error))
-    {
-        LOG_PRINT("VESC1 overcurrent fault detected\r\n");
-        return 1U;
-    }
+	if (vesc1_values_ok && vesc_is_overcurrent_fault(vesc1.data.error))
+	{
+		LOG_PRINT("VESC1 overcurrent fault detected\r\n");
+		return 1U;
+	}
 
-    if (vesc2_values_ok && vesc_is_overcurrent_fault(vesc2.data.error))
-    {
-        LOG_PRINT("VESC2 overcurrent fault detected\r\n");
-        return 1U;
-    }
+	if (vesc2_values_ok && vesc_is_overcurrent_fault(vesc2.data.error))
+	{
+		LOG_PRINT("VESC2 overcurrent fault detected\r\n");
+		return 1U;
+	}
 
-    return 0U;
+	return 0U;
 }
 
 static uint8_t vesc_overcurrent_faults_clear(void)
 {
-    const uint8_t vesc1_values_ok = VescUart_GetVescValues(&vesc1) ? 1U : 0U;
-    const uint8_t vesc2_values_ok = VescUart_GetVescValues(&vesc2) ? 1U : 0U;
+	const uint8_t vesc1_values_ok = VescUart_GetVescValues(&vesc1) ? 1U : 0U;
+	const uint8_t vesc2_values_ok = VescUart_GetVescValues(&vesc2) ? 1U : 0U;
 
-    if (!vesc1_values_ok || !vesc2_values_ok)
-    {
-        return 0U;
-    }
+	if (!vesc1_values_ok || !vesc2_values_ok)
+	{
+		return 0U;
+	}
 
-    return (uint8_t)(!vesc_is_overcurrent_fault(vesc1.data.error) &&
-                     !vesc_is_overcurrent_fault(vesc2.data.error));
+	return (uint8_t)(!vesc_is_overcurrent_fault(vesc1.data.error) &&
+					 !vesc_is_overcurrent_fault(vesc2.data.error));
 }
 
 void state_machine_init(void)
 {
-//    VescUart_Init(&vesc1, &huart1, 100);
-//    VescUart_Init(&vesc2, &huart2, 100);
-//
-//    vesc_stop_all();
-    current_state = ROBOT_STATE_IDLE;
-    is_escaping = 0;
-    opponent_track_start_ms = 0U;
-    opponent_front_last_seen_ms = 0U;
-    opponent_left_cooldown_until_ms = 0U;
-    opponent_right_cooldown_until_ms = 0U;
-    motor_control_stop();
+	//    VescUart_Init(&vesc1, &huart1, 100);
+	//    VescUart_Init(&vesc2, &huart2, 100);
+	//
+	//    vesc_stop_all();
+	current_state = ROBOT_STATE_IDLE;
+	is_escaping = 0;
+	opponent_track_start_ms = 0U;
+	opponent_front_last_seen_ms = 0U;
+	opponent_left_cooldown_until_ms = 0U;
+	opponent_right_cooldown_until_ms = 0U;
+	motor_control_stop();
 
-    run_once = 0;
+	run_once = 0;
 }
 
 void state_machine_background(void)
@@ -292,183 +294,206 @@ void state_machine_background(void)
 
 void state_machine_update(void)
 {
-    const opponent_status_t opponent = opponent_tracker_get_status();
-    const edge_status_t edge = edge_detector_get_status();
-    const uint32_t now_ms = HAL_GetTick();
-    uint8_t front_seen_or_latched = opponent.front;
+	const opponent_status_t opponent = opponent_tracker_get_status();
+	const edge_status_t edge = edge_detector_get_status();
+	const uint32_t now_ms = HAL_GetTick();
+	uint8_t front_seen_or_latched = opponent.front;
 
-    if (opponent.front != 0U) {
-        opponent_front_last_seen_ms = now_ms;
-    } else if ((opponent_front_last_seen_ms != 0U) &&
-               ((now_ms - opponent_front_last_seen_ms) <= OPPONENT_FRONT_LATCH_MS)) {
-        front_seen_or_latched = 1U;
-    }
+	if (opponent.front != 0U)
+	{
+		opponent_front_last_seen_ms = now_ms;
+	}
+	else if ((opponent_front_last_seen_ms != 0U) &&
+			 ((now_ms - opponent_front_last_seen_ms) <= OPPONENT_FRONT_LATCH_MS))
+	{
+		front_seen_or_latched = 1U;
+	}
 
-    //TOF_debug();
+	// TOF_debug();
 
 #if EDGE_TEST
-    edge_process_analog_detection(&edge);
-    edge_process_detection();
+	edge_process_analog_detection(&edge);
+	edge_process_detection();
 #endif
 
-    if (failsafe_is_faulted())
-    {
-        current_state = ROBOT_STATE_FAULT;
-        vesc_stop_all();
-    }
-    else if (run_once)
-    {
-        return;
-    }
-//    else if (vesc_fault_latched)
-//    {
-        //     current_state = ROBOT_STATE_FAULT;
-        //     vesc_stop_all();
+	if (failsafe_is_faulted())
+	{
+		current_state = ROBOT_STATE_FAULT;
+		vesc_stop_all();
+	}
+	else if (run_once)
+	{
+		return;
+	}
+	//    else if (vesc_fault_latched)
+	//    {
+	//     current_state = ROBOT_STATE_FAULT;
+	//     vesc_stop_all();
 
-        //     if ((HAL_GetTick() - vesc_fault_start_time) >= VESC_FAULT_RECOVERY_WAIT_MS) {
-        //         if (vesc_overcurrent_faults_clear()) {
-        //             vesc_fault_latched = 0U;
-        //             current_state = ROBOT_STATE_RECOVER;
-        //             LOG_PRINT("VESC overcurrent recovered after 500 ms\r\n");
-        //         } else {
-        //             vesc_fault_start_time = HAL_GetTick();
-        //             LOG_PRINT("VESC overcurrent still active. Recovery wait restarted\r\n");
-        //         }
-        //     }
+	//     if ((HAL_GetTick() - vesc_fault_start_time) >= VESC_FAULT_RECOVERY_WAIT_MS) {
+	//         if (vesc_overcurrent_faults_clear()) {
+	//             vesc_fault_latched = 0U;
+	//             current_state = ROBOT_STATE_RECOVER;
+	//             LOG_PRINT("VESC overcurrent recovered after 500 ms\r\n");
+	//         } else {
+	//             vesc_fault_start_time = HAL_GetTick();
+	//             LOG_PRINT("VESC overcurrent still active. Recovery wait restarted\r\n");
+	//         }
+	//     }
 //    }
 #if EDGE_TEST
-    else if (is_escaping)
-    {
-    	edge_escape_execute_blocking();
-    	return;
-    }
+	else if (is_escaping)
+	{
+		edge_escape_execute_blocking();
+		return;
+	}
 #endif
 #if OPPONENT_TEST
-    else if (front_seen_or_latched)
-    {
-        current_state = ROBOT_STATE_ATTACK;
-    }
-    else if ((opponent.left != 0U) && (opponent.right != 0U))
-    {
-        current_state = ROBOT_STATE_ATTACK;
-    }
-    else if ((current_state == ROBOT_STATE_TRACK_LEFT) ||
-             (current_state == ROBOT_STATE_TRACK_RIGHT))
-    {
-        if ((current_state == ROBOT_STATE_TRACK_LEFT) &&
-            (opponent.right != 0U) &&
-            (opponent.left == 0U) &&
-            ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
-        {
-            current_state = ROBOT_STATE_TRACK_RIGHT;
-            opponent_track_start_ms = now_ms;
-        }
-        else if ((current_state == ROBOT_STATE_TRACK_RIGHT) &&
-                 (opponent.left != 0U) &&
-                 (opponent.right == 0U) &&
-                 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
-        {
-            current_state = ROBOT_STATE_TRACK_LEFT;
-            opponent_track_start_ms = now_ms;
-        }
-    	else if ((now_ms - opponent_track_start_ms) >= OPPONENT_TRACK_TIMEOUT_MS)
-    	{
-            if (current_state == ROBOT_STATE_TRACK_LEFT)
-            {
-                opponent_left_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
-            }
-            else
-            {
-                opponent_right_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
-            }
-    		current_state = ROBOT_STATE_SEARCH;
-    	}
-    }
-    else if ((opponent.left != 0U) &&
-             ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
-    {
-        current_state = ROBOT_STATE_TRACK_LEFT;
-        opponent_track_start_ms = now_ms;
-    }
-    else if ((opponent.right != 0U) &&
-             ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
-    {
-        current_state = ROBOT_STATE_TRACK_RIGHT;
-        opponent_track_start_ms = now_ms;
-    }
+	else if (front_seen_or_latched)
+	{
+		current_state = ROBOT_STATE_ATTACK;
+		is_attack = 1;
+	}
+	else if ((opponent.left != 0U) && (opponent.right != 0U))
+	{
+		current_state = ROBOT_STATE_ATTACK;
+		is_attack = 1;
+	}
+	else if ((current_state == ROBOT_STATE_TRACK_LEFT) ||
+			 (current_state == ROBOT_STATE_TRACK_RIGHT))
+	{
+		if ((current_state == ROBOT_STATE_TRACK_LEFT) &&
+			(opponent.right != 0U) &&
+			(opponent.left == 0U) &&
+			((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
+		{
+			current_state = ROBOT_STATE_TRACK_RIGHT;
+			opponent_track_start_ms = now_ms;
+			is_attack = 0;
+		}
+		else if ((current_state == ROBOT_STATE_TRACK_RIGHT) &&
+				 (opponent.left != 0U) &&
+				 (opponent.right == 0U) &&
+				 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
+		{
+			current_state = ROBOT_STATE_TRACK_LEFT;
+			opponent_track_start_ms = now_ms;
+			is_attack = 0;
+		}
+		else if ((now_ms - opponent_track_start_ms) >= OPPONENT_TRACK_TIMEOUT_MS)
+		{
+			if (current_state == ROBOT_STATE_TRACK_LEFT)
+			{
+				opponent_left_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
+			}
+			else
+			{
+				opponent_right_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
+			}
+			current_state = ROBOT_STATE_SEARCH;
+			is_attack = 0;
+		}
+	}
+	else if ((opponent.left != 0U) &&
+			 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
+	{
+		current_state = ROBOT_STATE_TRACK_LEFT;
+		opponent_track_start_ms = now_ms;
+	}
+	else if ((opponent.right != 0U) &&
+			 ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
+	{
+		current_state = ROBOT_STATE_TRACK_RIGHT;
+		opponent_track_start_ms = now_ms;
+	}
 #endif
-    else
-    {
-        current_state = ROBOT_STATE_SEARCH;
-    }
+	else
+	{
+		current_state = ROBOT_STATE_SEARCH;
+	}
 
+	switch (current_state)
+	{
 
-    switch (current_state)
-    {
+#if EDGE_TEST
+	case ROBOT_STATE_EDGE_ESCAPE:
+		// motor_control_stop();
+		break;
+#endif
 
-    #if EDGE_TEST
-    case ROBOT_STATE_EDGE_ESCAPE:
-    	// motor_control_stop();
-        break;
-        #endif
+#if OPPONENT_TEST
+	case ROBOT_STATE_ATTACK:
+		// motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
+		int front_mm = front_mm_return();
+		if (front_mm <= 1000)
+		{
+			motor_control_set_pwm(2150, 2150);
+		}
 
-    #if OPPONENT_TEST
-    case ROBOT_STATE_ATTACK:
-        //motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
-    	int front_mm = front_mm_return();
-    	if (front_mm <= 700){
-    		motor_control_set_pwm(1500, 1500);
-    	}
+		// LOG_PRINT("Attacking\n");
+		opponent_debug_leds(&opponent);
+		break;
 
-        //LOG_PRINT("Attacking\n");
-        opponent_debug_leds(&opponent);
-        break;
+	case ROBOT_STATE_TRACK_LEFT:
+		opponent_debug_leds(&opponent);
+		motor_control_set_pwm(1950, 1300);
+		break;
 
-    case ROBOT_STATE_TRACK_LEFT:
-    	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(2150, 1000);
-        break;
+	case ROBOT_STATE_TRACK_RIGHT:
+		opponent_debug_leds(&opponent);
+		motor_control_set_pwm(1300, 1950);
+		break;
 
-    case ROBOT_STATE_TRACK_RIGHT:
-    	opponent_debug_leds(&opponent);
-        motor_control_set_pwm(1000, 2150);
-        break;
+	case ROBOT_STATE_SEARCH:
+		opponent_debug_leds(&opponent);
 
-    case ROBOT_STATE_SEARCH:
-    	opponent_debug_leds(&opponent);
+		if (distance_sensor_needs_recovery())
+		{
+			switch (is_attack)
+			{
+			case 0:
+				motor_control_set_pwm(1500, 1500);
+				motor_control_update();
+				distance_sensor_recover_during_edge_escape();
+				break;
+			case 1:
+				motor_control_set_pwm(1800, 1800);
+				motor_control_update();
+				distance_sensor_recover_during_edge_escape();
+				break;
+			}
+			//        	motor_control_set_pwm(1500, 1500);
+			//        	motor_control_update();
+			//        	distance_sensor_recover_during_edge_escape();
+			//        	break;
+		}
 
-        if (distance_sensor_needs_recovery()) {
-        	motor_control_set_pwm(1500, 1500);
-        	motor_control_update();
-        	distance_sensor_recover_during_edge_escape();
-        	break;
-        }
+		motor_control_set_pwm(1500, 1500);
+		motor_control_update();
+		break;
+#else
+	case ROBOT_STATE_SEARCH:
+		motor_control_set_pwm(2250, 2250);
+		break;
+#endif
 
-        motor_control_set_pwm(1500, 1500);
-        break;
-    #else
-    case ROBOT_STATE_SEARCH:
-        motor_control_set_pwm(2250, 2250);
-        break;
-    #endif
+	case ROBOT_STATE_IDLE:
+		//    	motor_control_set_pwm(1500, 1500);
+		//    	break;
+	case ROBOT_STATE_RECOVER:
+	case ROBOT_STATE_FAULT:
+	default:
+		vesc_stop_all();
+		motor_control_stop();
+		break;
+	}
 
-    case ROBOT_STATE_IDLE:
-//    	motor_control_set_pwm(1500, 1500);
-//    	break;
-    case ROBOT_STATE_RECOVER:
-    case ROBOT_STATE_FAULT:
-    default:
-        vesc_stop_all();
-        motor_control_stop();
-        break;
-    }
-
-    return;
+	return;
 }
 
 robot_state_t state_machine_get_state(void)
 {
-    return current_state;
+	return current_state;
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
