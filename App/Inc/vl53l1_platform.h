@@ -72,6 +72,8 @@
  * these parameters set the ranging configuration
  * on the device boot
  ***************************************************/
+
+
 #define VL53L1__DISTANCE_MODE		(2)		// 1=short, 2=long
 #define VL53L1__TIMING_BUDGET		(33)	// in ms, possible values: [15 (only if DISTANCE MODE is 1), 20, 33, 50, 100, 200, 500] - that's the time for a single reading
 #define VL53L1__TB_IM_DELTA			(5)		// in ms, added to TB to get IM setting
@@ -90,9 +92,9 @@
  * Detect them using the STM calibration functions
  * available in the VL53L1X package
  ***************************************************/
-#define VL53L1__WINDOW_MODE		(0)		// 0=below, 1=beyond, 2=out of window, 3=inside window
-#define VL53L1__LOWER_THRESHOLD	(5000)		// (mm) lower window limit. For WINDOW_MODE = 0, 2, 3
-#define VL53L1__UPPER_THRESHOLD	(5000)		// (mm) upper window limit. For WINDOW_MODE = 1, 2, 3
+#define VL53L1__WINDOW_MODE		(3)		// 0=below, 1=beyond, 2=out of window, 3=inside window
+#define VL53L1__LOWER_THRESHOLD	(0)		// (mm) lower window limit. For WINDOW_MODE = 0, 2, 3
+#define VL53L1__UPPER_THRESHOLD	(300)		// (mm) upper window limit. For WINDOW_MODE = 1, 2, 3
 
 
 /*****************     STEP 4      *****************

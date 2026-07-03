@@ -18,8 +18,8 @@
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-#define EDGE_ESCAPE_DURATION_MS 1000U
-#define EDGE_ESCAPE_BACKUP_MS 600U
+#define EDGE_ESCAPE_DURATION_MS 600U
+#define EDGE_ESCAPE_BACKUP_MS 500U
 #define IR1_EDGE_TEST_ENABLE 0
 #define IR2_EDGE_TEST_ENABLE 0
 #define IR1_EDGE_DETECTED_STATE GPIO_PIN_RESET
@@ -427,7 +427,7 @@ void state_machine_update(void)
 		int front_mm = front_mm_return();
 		if (front_mm <= 1000)
 		{
-			motor_control_set_pwm(2150, 2150);
+			motor_control_set_pwm(1900, 1900);
 		}
 
 		// LOG_PRINT("Attacking\n");
@@ -436,12 +436,12 @@ void state_machine_update(void)
 
 	case ROBOT_STATE_TRACK_LEFT:
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1950, 1300);
+		motor_control_set_pwm(1700, 1300);
 		break;
 
 	case ROBOT_STATE_TRACK_RIGHT:
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1300, 1950);
+		motor_control_set_pwm(1300, 1700);
 		break;
 
 	case ROBOT_STATE_SEARCH:

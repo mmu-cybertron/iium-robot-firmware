@@ -1,7 +1,7 @@
 #include "line_sensor.h"
 #include "main.h"
 
-#define IR_ANALOG_EDGE_THRESHOLD 2600U
+#define IR_ANALOG_EDGE_THRESHOLD 450U
 #define IR_ANALOG_TIMEOUT_MS 1U
 #define IR3_ADC_CHANNEL 9U
 #define IR4_ADC_CHANNEL 8U
@@ -57,11 +57,14 @@ void line_sensor_init(void)
     line_sensor_adc_init_once();
 }
 
+static uint16_t left_adc;
+static uint16_t right_adc;
+
 edge_status_t line_sensor_read_edges(void)
 {
     edge_status_t status;
-    const uint16_t left_adc = line_sensor_read_adc(IR3_ADC_CHANNEL);
-    const uint16_t right_adc = line_sensor_read_adc(IR4_ADC_CHANNEL);
+	left_adc = line_sensor_read_adc(IR3_ADC_CHANNEL);
+	right_adc = line_sensor_read_adc(IR4_ADC_CHANNEL);
 
     status.front_left = (left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
     status.front_right = (right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
