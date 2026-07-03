@@ -94,7 +94,7 @@
  ***************************************************/
 #define VL53L1__WINDOW_MODE		(3)		// 0=below, 1=beyond, 2=out of window, 3=inside window
 #define VL53L1__LOWER_THRESHOLD	(0)		// (mm) lower window limit. For WINDOW_MODE = 0, 2, 3
-#define VL53L1__UPPER_THRESHOLD	(300)		// (mm) upper window limit. For WINDOW_MODE = 1, 2, 3
+#define VL53L1__UPPER_THRESHOLD	(1500)		// (mm) upper window limit. For WINDOW_MODE = 1, 2, 3
 
 
 /*****************     STEP 4      *****************

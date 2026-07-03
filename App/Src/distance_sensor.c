@@ -376,12 +376,12 @@ uint8_t distance_sensor_start_vl53l1(void)
     distance_sensor_update_debug_leds(&last_status);
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin | XSHUT_2_Pin | XSHUT_3_Pin, GPIO_PIN_RESET);
-    HAL_Delay(3U);
+    HAL_Delay(20U);
 
     uint8_t err;
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_SET);
-    HAL_Delay(2U);
+    HAL_Delay(20U);
     err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_LEFT);
     err |= VL53L1X_SensorInit(VL53L1__ADDR_LEFT);
     if (err == 0U)
@@ -397,7 +397,7 @@ uint8_t distance_sensor_start_vl53l1(void)
     }
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_2_Pin, GPIO_PIN_SET);
-    HAL_Delay(2U);
+    HAL_Delay(20U);
     err = VL53L1X_SetI2CAddress(0x52, VL53L1__ADDR_FRONT);
     err |= VL53L1X_SensorInit(VL53L1__ADDR_FRONT);
     if (err == 0U)
@@ -413,7 +413,7 @@ uint8_t distance_sensor_start_vl53l1(void)
     }
 
     HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_SET);
-    HAL_Delay(2U);
+    HAL_Delay(20U);
     err = VL53L1X_SensorInit(VL53L1__ADDR);
     if (err == 0U)
     {

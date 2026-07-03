@@ -42,6 +42,7 @@ static uint8_t edge_mode = 0;
 static volatile uint8_t escape_timer_started = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
+static uint8_t stop_command_sent = 0; /* avoids re-sending stop/VESC-zero every tick while already stopped */
 static volatile uint8_t ir1_interrupt_pending = 0;
 static volatile uint8_t ir2_interrupt_pending = 0;
 static volatile uint32_t ir1_interrupt_time_ms = 0;
@@ -286,6 +287,7 @@ void state_machine_init(void)
 	motor_control_stop();
 
 	run_once = 0;
+	stop_command_sent = 0U;
 }
 
 void state_machine_background(void)
@@ -318,8 +320,11 @@ void state_machine_update(void)
 
 	if (failsafe_is_faulted())
 	{
+		/* vesc_stop_all() removed here — the switch's FAULT/default case
+		 * below already calls vesc_stop_all() + motor_control_stop().
+		 * Calling it here too meant 4 redundant blocking VESC UART
+		 * transmits every single tick while faulted. */
 		current_state = ROBOT_STATE_FAULT;
-		vesc_stop_all();
 	}
 	else if (run_once)
 	{
@@ -417,14 +422,17 @@ void state_machine_update(void)
 
 #if EDGE_TEST
 	case ROBOT_STATE_EDGE_ESCAPE:
+		stop_command_sent = 0U;
 		// motor_control_stop();
 		break;
 #endif
 
 #if OPPONENT_TEST
 	case ROBOT_STATE_ATTACK:
+	{
+		stop_command_sent = 0U;
 		// motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
-		int front_mm = front_mm_return();
+		const int front_mm = front_mm_return();
 		if (front_mm <= 1000)
 		{
 			motor_control_set_pwm(1900, 1900);
@@ -433,39 +441,33 @@ void state_machine_update(void)
 		// LOG_PRINT("Attacking\n");
 		opponent_debug_leds(&opponent);
 		break;
+	}
 
 	case ROBOT_STATE_TRACK_LEFT:
+		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
 		motor_control_set_pwm(1700, 1300);
 		break;
 
 	case ROBOT_STATE_TRACK_RIGHT:
+		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
 		motor_control_set_pwm(1300, 1700);
 		break;
 
 	case ROBOT_STATE_SEARCH:
+		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
 
 		if (distance_sensor_needs_recovery())
 		{
-			switch (is_attack)
-			{
-			case 0:
-				motor_control_set_pwm(1500, 1500);
-				motor_control_update();
-				distance_sensor_recover_during_edge_escape();
-				break;
-			case 1:
-				motor_control_set_pwm(1800, 1800);
-				motor_control_update();
-				distance_sensor_recover_during_edge_escape();
-				break;
-			}
-			//        	motor_control_set_pwm(1500, 1500);
-			//        	motor_control_update();
-			//        	distance_sensor_recover_during_edge_escape();
-			//        	break;
+			/* Both is_attack cases previously did the exact same thing —
+			 * collapsed to a single call. Note this call itself is
+			 * BLOCKING and can take up to ~3 seconds (full 3-sensor
+			 * re-init) — that's the real cost center, not this branch. */
+			motor_control_set_pwm(1500, 1500);
+			motor_control_update();
+			distance_sensor_recover_during_edge_escape();
 		}
 
 		motor_control_set_pwm(1500, 1500);
@@ -473,6 +475,7 @@ void state_machine_update(void)
 		break;
 #else
 	case ROBOT_STATE_SEARCH:
+		stop_command_sent = 0U;
 		motor_control_set_pwm(2250, 2250);
 		break;
 #endif
@@ -483,8 +486,15 @@ void state_machine_update(void)
 	case ROBOT_STATE_RECOVER:
 	case ROBOT_STATE_FAULT:
 	default:
-		vesc_stop_all();
-		motor_control_stop();
+		/* Only send the stop/zero-throttle commands once per fault/idle
+		 * entry instead of every single tick — while faulted this was
+		 * previously firing 4 blocking VESC UART transmits every loop. */
+		if (!stop_command_sent)
+		{
+			vesc_stop_all();
+			motor_control_stop();
+			stop_command_sent = 1U;
+		}
 		break;
 	}
 

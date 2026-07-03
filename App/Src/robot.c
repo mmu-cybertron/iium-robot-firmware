@@ -18,7 +18,7 @@ void robot_init(void)
 	LOG_PRINT("Hello from init\n");
     
     motor_control_init();
-    HAL_Delay(1000);
+    HAL_Delay(100);
 #if !ROBOT_EDGE_IR_DEBUG
     opponent_tracker_init();
 #endif

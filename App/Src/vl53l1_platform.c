@@ -53,6 +53,9 @@
 extern I2C_HandleTypeDef VL53L1__PORT;
 #include "VL53L1X_api.h"
 
+volatile uint32_t last_i2c_error_code = 0U;
+volatile uint32_t last_i2c_state = 0U;
+
 int8_t VL53L1_RdByte(uint16_t dev, uint16_t index, uint8_t *data) {
 	if (HAL_I2C_Mem_Read(&VL53L1__PORT, dev, index, I2C_MEMADD_SIZE_16BIT, data, 1, I2C_COMM_TIMEOUT))
 		return VL53L1__IO_ERROR;
@@ -279,7 +282,7 @@ uint8_t VL53L1__InitAll(void) {
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_RESET);  // LEFT
     HAL_GPIO_WritePin(GPIOB, XSHUT_2_Pin, GPIO_PIN_RESET);  // FRONT
     HAL_GPIO_WritePin(GPIOB, XSHUT_3_Pin, GPIO_PIN_RESET);  // RIGHT
-    HAL_Delay(10);
+    HAL_Delay(5);
 
     /* LEFT: 0x52 -> 0x54 */
     HAL_GPIO_WritePin(GPIOB, XSHUT_1_Pin, GPIO_PIN_SET);
@@ -359,6 +362,7 @@ uint8_t VL53L1__InitAll(void) {
             return 1U;
         }
         HAL_Delay(1);
+
     }
 
     uint8_t  rangeStatus;
@@ -368,6 +372,10 @@ uint8_t VL53L1__InitAll(void) {
     status |= VL53L1X_GetRangeStatus(addr, &rangeStatus);
     status |= VL53L1X_GetDistance(addr, &distance);
     status |= VL53L1X_ClearInterrupt(addr);
+    if (status != 0U) {
+                last_i2c_error_code = HAL_I2C_GetError(&hi2c1);
+                last_i2c_state = (uint32_t)HAL_I2C_GetState(&hi2c1);
+            }
 
     if ((status != 0U) || (rangeStatus > VL53L1__RANGE_STATUS_THRESH)) {
         return 1U;
