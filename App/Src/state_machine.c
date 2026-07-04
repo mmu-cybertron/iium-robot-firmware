@@ -27,6 +27,9 @@ extern UART_HandleTypeDef huart2;
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
+#define SEARCH_SWEEP_LEFT_MS 50U
+#define SEARCH_SWEEP_RIGHT_MS 100U
+
 static uint16_t is_attack = 0;
 
 static uint32_t current_time = 0;
@@ -43,6 +46,8 @@ static volatile uint8_t escape_timer_started = 0;
 static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
 static uint8_t stop_command_sent = 0; /* avoids re-sending stop/VESC-zero every tick while already stopped */
+static uint32_t search_sweep_phase_start_ms = 0U;
+static uint8_t search_sweep_going_left = 1U; /* always start a fresh sweep going left */
 static volatile uint8_t ir1_interrupt_pending = 0;
 static volatile uint8_t ir2_interrupt_pending = 0;
 static volatile uint32_t ir1_interrupt_time_ms = 0;
@@ -288,6 +293,8 @@ void state_machine_init(void)
 
 	run_once = 0;
 	stop_command_sent = 0U;
+	search_sweep_going_left = 1U;
+	search_sweep_phase_start_ms = 0U;
 }
 
 void state_machine_background(void)
@@ -296,6 +303,7 @@ void state_machine_background(void)
 
 void state_machine_update(void)
 {
+	const robot_state_t previous_state = current_state;
 	const opponent_status_t opponent = opponent_tracker_get_status();
 	const edge_status_t edge = edge_detector_get_status();
 	const uint32_t now_ms = HAL_GetTick();
@@ -364,58 +372,76 @@ void state_machine_update(void)
 		current_state = ROBOT_STATE_ATTACK;
 		is_attack = 1;
 	}
-	else if ((current_state == ROBOT_STATE_TRACK_LEFT) ||
-			 (current_state == ROBOT_STATE_TRACK_RIGHT))
+	else
 	{
-		if ((current_state == ROBOT_STATE_TRACK_LEFT) &&
-			(opponent.right != 0U) &&
-			(opponent.left == 0U) &&
-			((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
+		const uint8_t tracking_left = (current_state == ROBOT_STATE_TRACK_LEFT);
+		const uint8_t tracking_right = (current_state == ROBOT_STATE_TRACK_RIGHT);
+
+		if (tracking_left || tracking_right)
 		{
-			current_state = ROBOT_STATE_TRACK_RIGHT;
-			opponent_track_start_ms = now_ms;
-			is_attack = 0;
+			const uint8_t still_same_side =
+				(tracking_left && (opponent.left != 0U)) ||
+				(tracking_right && (opponent.right != 0U));
+
+			if (still_same_side)
+			{
+				/* Opponent still on the tracked side — refresh the
+				 * window instead of letting a live target time out. */
+				opponent_track_start_ms = now_ms;
+			}
+			else if (tracking_left &&
+					 (opponent.right != 0U) &&
+					 ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
+			{
+				current_state = ROBOT_STATE_TRACK_RIGHT;
+				opponent_track_start_ms = now_ms;
+				is_attack = 0;
+			}
+			else if (tracking_right &&
+					 (opponent.left != 0U) &&
+					 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
+			{
+				current_state = ROBOT_STATE_TRACK_LEFT;
+				opponent_track_start_ms = now_ms;
+				is_attack = 0;
+			}
+			else if ((now_ms - opponent_track_start_ms) >= OPPONENT_TRACK_TIMEOUT_MS)
+			{
+				if (tracking_left)
+				{
+					opponent_left_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
+				}
+				else
+				{
+					opponent_right_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
+				}
+				current_state = ROBOT_STATE_SEARCH;
+				is_attack = 0;
+			}
 		}
-		else if ((current_state == ROBOT_STATE_TRACK_RIGHT) &&
-				 (opponent.left != 0U) &&
-				 (opponent.right == 0U) &&
+		else if ((opponent.left != 0U) &&
 				 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
 		{
 			current_state = ROBOT_STATE_TRACK_LEFT;
 			opponent_track_start_ms = now_ms;
-			is_attack = 0;
 		}
-		else if ((now_ms - opponent_track_start_ms) >= OPPONENT_TRACK_TIMEOUT_MS)
+		else if ((opponent.right != 0U) &&
+				 ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
 		{
-			if (current_state == ROBOT_STATE_TRACK_LEFT)
-			{
-				opponent_left_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
-			}
-			else
-			{
-				opponent_right_cooldown_until_ms = now_ms + OPPONENT_TRACK_COOLDOWN_MS;
-			}
+			current_state = ROBOT_STATE_TRACK_RIGHT;
+			opponent_track_start_ms = now_ms;
+		}
+		else
+		{
 			current_state = ROBOT_STATE_SEARCH;
-			is_attack = 0;
 		}
 	}
-	else if ((opponent.left != 0U) &&
-			 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
-	{
-		current_state = ROBOT_STATE_TRACK_LEFT;
-		opponent_track_start_ms = now_ms;
-	}
-	else if ((opponent.right != 0U) &&
-			 ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
-	{
-		current_state = ROBOT_STATE_TRACK_RIGHT;
-		opponent_track_start_ms = now_ms;
-	}
-#endif
+#else
 	else
 	{
 		current_state = ROBOT_STATE_SEARCH;
 	}
+#endif
 
 	switch (current_state)
 	{
@@ -435,7 +461,7 @@ void state_machine_update(void)
 		const int front_mm = front_mm_return();
 		if (front_mm <= 1000)
 		{
-			motor_control_set_pwm(1900, 1900);
+			motor_control_set_pwm(2250, 2250);
 		}
 
 		// LOG_PRINT("Attacking\n");
@@ -446,18 +472,26 @@ void state_machine_update(void)
 	case ROBOT_STATE_TRACK_LEFT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1700, 1300);
+		motor_control_set_pwm(1500, 1000);
 		break;
 
 	case ROBOT_STATE_TRACK_RIGHT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1300, 1700);
+		motor_control_set_pwm(1000, 1500);
 		break;
 
 	case ROBOT_STATE_SEARCH:
+	{
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
+
+		if (previous_state != ROBOT_STATE_SEARCH)
+		{
+			/* Fresh entry into SEARCH — always restart the sweep at "left". */
+			search_sweep_going_left = 1U;
+			search_sweep_phase_start_ms = now_ms;
+		}
 
 		if (distance_sensor_needs_recovery())
 		{
@@ -468,11 +502,35 @@ void state_machine_update(void)
 			motor_control_set_pwm(1500, 1500);
 			motor_control_update();
 			distance_sensor_recover_during_edge_escape();
+			/* Re-sync the sweep timer after the blocking recovery call,
+			 * otherwise the huge elapsed time would force an immediate
+			 * phase flip on the very next tick. */
+			search_sweep_phase_start_ms = HAL_GetTick();
 		}
 
+//		const uint32_t sweep_now_ms = HAL_GetTick();
+//		const uint32_t phase_elapsed_ms = sweep_now_ms - search_sweep_phase_start_ms;
+//		const uint32_t phase_duration_ms =
+//			search_sweep_going_left ? SEARCH_SWEEP_LEFT_MS : SEARCH_SWEEP_RIGHT_MS;
+//
+//		if (phase_elapsed_ms >= phase_duration_ms)
+//		{
+//			search_sweep_going_left = !search_sweep_going_left;
+//			search_sweep_phase_start_ms = sweep_now_ms;
+//		}
+//
+//		if (search_sweep_going_left)
+//		{
+//			motor_control_set_pwm(1500, 900);
+//		}
+//		else
+//		{
+//			motor_control_set_pwm(900, 1500);
+//		}
 		motor_control_set_pwm(1500, 1500);
 		motor_control_update();
 		break;
+	}
 #else
 	case ROBOT_STATE_SEARCH:
 		stop_command_sent = 0U;
