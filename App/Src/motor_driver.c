@@ -85,12 +85,16 @@ void motor_driver_set_pwm(int16_t left_pwm, int16_t right_pwm)
         return;
     }
 
-    set_motor_pwm(LEFT_MOTOR_PWM_TIMER,
-                  LEFT_MOTOR_PWM_CHANNEL,
-                  left_pwm);
-    set_motor_pwm(RIGHT_MOTOR_PWM_TIMER,
-                  RIGHT_MOTOR_PWM_CHANNEL,
-                  right_pwm);
+    // -------------------------------------------------------------------------
+    // FOR LIVE EXPRESSION TESTING: Force motors to neutral (stop)
+    // -------------------------------------------------------------------------
+    set_motor_pwm(LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL, MOTOR_PWM_NEUTRAL);
+    set_motor_pwm(RIGHT_MOTOR_PWM_TIMER, RIGHT_MOTOR_PWM_CHANNEL, MOTOR_PWM_NEUTRAL);
+    return;
+    
+    // Original code:
+    set_motor_pwm(LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL, left_pwm);
+    set_motor_pwm(RIGHT_MOTOR_PWM_TIMER, RIGHT_MOTOR_PWM_CHANNEL, right_pwm);
 }
 
 void motor_driver_brake(void)

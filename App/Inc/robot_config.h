@@ -37,6 +37,15 @@
 
 #define ROBOT_ACTIVE_MODE ROBOT_MODE_RUN
 
+/* Set to 1U to require the start module remote to start the robot */
+#define ROBOT_REQUIRE_START_MODULE 1U
+
+/* Sensor configurations */
+#define ROBOT_ENABLE_TOF_SENSORS 0U
+#define ROBOT_ENABLE_SHARP_IR_SENSOR 1U
+#define SHARP_IR_ADC_CHANNEL 4U
+#define SHARP_IR_THRESHOLD 1000U
+
 /* Set to 0U to skip game-mode selection and initial-move execution. */
 #define ROBOT_GAME_MODE_SELECTOR_ENABLE 0U
 

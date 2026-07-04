@@ -27,13 +27,13 @@ static void line_sensor_adc_init_once(void)
     ADC1->CR1 = 0U;
     ADC1->CR2 = 0U;
     ADC1->SQR1 = 0U;
-    ADC1->SMPR2 |= ADC_SMPR2_SMP8 | ADC_SMPR2_SMP9;
+    ADC1->SMPR2 |= ADC_SMPR2_SMP4 | ADC_SMPR2_SMP8 | ADC_SMPR2_SMP9;
     ADC1->CR2 |= ADC_CR2_ADON;
 
     adc_initialized = 1U;
 }
 
-static uint16_t line_sensor_read_adc(uint32_t channel)
+uint16_t line_sensor_read_adc(uint32_t channel)
 {
     const uint32_t start_ms = HAL_GetTick();
 
@@ -57,11 +57,17 @@ void line_sensor_init(void)
     line_sensor_adc_init_once();
 }
 
+uint32_t debug_left_edge_adc = 0;
+uint32_t debug_right_edge_adc = 0;
+
 edge_status_t line_sensor_read_edges(void)
 {
     edge_status_t status;
     const uint16_t left_adc = line_sensor_read_adc(IR3_ADC_CHANNEL);
     const uint16_t right_adc = line_sensor_read_adc(IR4_ADC_CHANNEL);
+    
+    debug_left_edge_adc = left_adc;
+    debug_right_edge_adc = right_adc;
 
     status.front_left = (left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
     status.front_right = (right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;

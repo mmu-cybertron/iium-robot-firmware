@@ -462,13 +462,14 @@ void state_machine_update(void)
 				distance_sensor_recover_during_edge_escape();
 				break;
 			}
-			//        	motor_control_set_pwm(1500, 1500);
-			//        	motor_control_update();
-			//        	distance_sensor_recover_during_edge_escape();
-			//        	break;
 		}
 
+#if ROBOT_ENABLE_SHARP_IR_SENSOR
+		// Spin slowly to search for opponent
+		motor_control_set_pwm(1350, 1650);
+#else
 		motor_control_set_pwm(1500, 1500);
+#endif
 		motor_control_update();
 		break;
 #else

@@ -395,6 +395,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SM_Signal_GPIO_Port, &GPIO_InitStruct);
 
+  /* Configure PA4 as Analog for Sharp IR sensor */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LEFT_DIR_Pin RIGHT_DIR_Pin LED_D8_Pin */
   GPIO_InitStruct.Pin = LEFT_DIR_Pin|RIGHT_DIR_Pin|LED_D8_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;

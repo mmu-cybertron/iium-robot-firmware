@@ -6,5 +6,6 @@
 
 void line_sensor_init(void);
 edge_status_t line_sensor_read_edges(void);
+uint16_t line_sensor_read_adc(uint32_t channel);
 
 #endif /* LINE_SENSOR_H */
