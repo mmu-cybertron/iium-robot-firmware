@@ -36,6 +36,8 @@ static uint32_t current_time = 0;
 static uint32_t escape_start_time = 0;
 static uint32_t opponent_track_start_ms = 0;
 static uint32_t opponent_front_last_seen_ms = 0;
+static uint32_t opponent_left_last_seen_ms = 0;
+static uint32_t opponent_right_last_seen_ms = 0;
 static uint32_t opponent_left_cooldown_until_ms = 0;
 static uint32_t opponent_right_cooldown_until_ms = 0;
 static uint32_t last_vesc_fault_poll_time = 0;
@@ -287,6 +289,8 @@ void state_machine_init(void)
 	is_escaping = 0;
 	opponent_track_start_ms = 0U;
 	opponent_front_last_seen_ms = 0U;
+	opponent_left_last_seen_ms = 0U;
+	opponent_right_last_seen_ms = 0U;
 	opponent_left_cooldown_until_ms = 0U;
 	opponent_right_cooldown_until_ms = 0U;
 	motor_control_stop();
@@ -317,6 +321,14 @@ void state_machine_update(void)
 			 ((now_ms - opponent_front_last_seen_ms) <= OPPONENT_FRONT_LATCH_MS))
 	{
 		front_seen_or_latched = 1U;
+	}
+	if (opponent.left != 0U)
+	{
+		opponent_left_last_seen_ms = now_ms;
+	}
+	if (opponent.right != 0U)
+	{
+		opponent_right_last_seen_ms = now_ms;
 	}
 
 	// TOF_debug();
@@ -368,6 +380,20 @@ void state_machine_update(void)
 		is_attack = 1;
 	}
 	else if ((opponent.left != 0U) && (opponent.right != 0U))
+	{
+		current_state = ROBOT_STATE_ATTACK;
+		is_attack = 1;
+	}
+	else if ((opponent.left != 0U) &&
+			 (opponent_right_last_seen_ms != 0U) &&
+			 ((now_ms - opponent_right_last_seen_ms) <= OPPONENT_SIDE_CROSS_ATTACK_WINDOW_MS))
+	{
+		current_state = ROBOT_STATE_ATTACK;
+		is_attack = 1;
+	}
+	else if ((opponent.right != 0U) &&
+			 (opponent_left_last_seen_ms != 0U) &&
+			 ((now_ms - opponent_left_last_seen_ms) <= OPPONENT_SIDE_CROSS_ATTACK_WINDOW_MS))
 	{
 		current_state = ROBOT_STATE_ATTACK;
 		is_attack = 1;
