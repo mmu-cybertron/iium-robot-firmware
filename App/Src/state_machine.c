@@ -27,8 +27,9 @@ extern UART_HandleTypeDef huart2;
 #define VESC_FAULT_POLL_PERIOD_MS 200U
 #define VESC_FAULT_RECOVERY_WAIT_MS 500U
 
-#define SEARCH_SWEEP_LEFT_MS 50U
-#define SEARCH_SWEEP_RIGHT_MS 100U
+#define SEARCH_SWEEP_LEFT_MS 300U
+#define SEARCH_SWEEP_RIGHT_MS 600U
+#define SEARCH_SWEEP_PAUSE_MS 100U
 
 static uint16_t is_attack = 0;
 
@@ -49,7 +50,10 @@ static uint8_t run_once = 0;
 static uint8_t vesc_fault_latched = 0;
 static uint8_t stop_command_sent = 0; /* avoids re-sending stop/VESC-zero every tick while already stopped */
 static uint32_t search_sweep_phase_start_ms = 0U;
+static uint8_t search_sweep_bias_left = 1U;
 static uint8_t search_sweep_going_left = 1U; /* always start a fresh sweep going left */
+static uint8_t search_initialized = 0U;
+
 static volatile uint8_t ir1_interrupt_pending = 0;
 static volatile uint8_t ir2_interrupt_pending = 0;
 static volatile uint32_t ir1_interrupt_time_ms = 0;
@@ -136,11 +140,21 @@ static void edge_escape_execute_blocking(void)
 	const robot_edge_escape_mode_t escape_mode = current_escape_mode;
 	const uint32_t turn_ms = EDGE_ESCAPE_DURATION_MS - EDGE_ESCAPE_BACKUP_MS;
 
+	search_initialized = 0U;
 	current_state = ROBOT_STATE_EDGE_ESCAPE;
 
 	motor_control_set_pwm(1500, 1500);
 	motor_control_update();
-	motor_control_set_pwm(900, 900);
+
+	if (escape_mode == ROBOT_ESCAPE_FRONT)
+		{
+			motor_control_set_pwm(2100, 2100); // Drive forward to escape rear edge
+		}
+		else
+		{
+			motor_control_set_pwm(900, 900); // Drive backward to escape front edge
+		}
+
 	motor_control_update();
 	const uint32_t recovery_start_ms = HAL_GetTick();
 	distance_sensor_recover_during_edge_escape();
@@ -221,6 +235,14 @@ static void edge_process_analog_detection(const edge_status_t *edge)
 	{
 		edge_escape_begin(ROBOT_ESCAPE_BACK_LEFT);
 	}
+	else if (edge->rear_left != 0U)
+	{
+		edge_escape_begin(ROBOT_ESCAPE_FRONT);
+	}
+	else if (edge->rear_right != 0U)
+	{
+		edge_escape_begin(ROBOT_ESCAPE_FRONT);
+	}
 }
 
 static void vesc_stop_all(void)
@@ -298,6 +320,7 @@ void state_machine_init(void)
 	run_once = 0;
 	stop_command_sent = 0U;
 	search_sweep_going_left = 1U;
+	search_sweep_bias_left = 1U;
 	search_sweep_phase_start_ms = 0U;
 }
 
@@ -512,48 +535,87 @@ void state_machine_update(void)
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
 
-		if (previous_state != ROBOT_STATE_SEARCH)
+		static uint8_t search_phase_step = 0U;
+
+		if (previous_state != ROBOT_STATE_SEARCH || search_initialized == 0U)
 		{
 			/* Fresh entry into SEARCH — always restart the sweep at "left". */
 			search_sweep_going_left = 1U;
+			search_sweep_bias_left = 1U;
+			search_phase_step = 0U;
 			search_sweep_phase_start_ms = now_ms;
+			search_initialized = 1U;
 		}
 
 		if (distance_sensor_needs_recovery())
 		{
-			/* Both is_attack cases previously did the exact same thing —
-			 * collapsed to a single call. Note this call itself is
-			 * BLOCKING and can take up to ~3 seconds (full 3-sensor
-			 * re-init) — that's the real cost center, not this branch. */
 			motor_control_set_pwm(1500, 1500);
 			motor_control_update();
 			distance_sensor_recover_during_edge_escape();
-			/* Re-sync the sweep timer after the blocking recovery call,
-			 * otherwise the huge elapsed time would force an immediate
-			 * phase flip on the very next tick. */
 			search_sweep_phase_start_ms = HAL_GetTick();
 		}
 
-//		const uint32_t sweep_now_ms = HAL_GetTick();
-//		const uint32_t phase_elapsed_ms = sweep_now_ms - search_sweep_phase_start_ms;
-//		const uint32_t phase_duration_ms =
-//			search_sweep_going_left ? SEARCH_SWEEP_LEFT_MS : SEARCH_SWEEP_RIGHT_MS;
-//
-//		if (phase_elapsed_ms >= phase_duration_ms)
-//		{
-//			search_sweep_going_left = !search_sweep_going_left;
-//			search_sweep_phase_start_ms = sweep_now_ms;
-//		}
-//
-//		if (search_sweep_going_left)
-//		{
-//			motor_control_set_pwm(1500, 900);
-//		}
-//		else
-//		{
-//			motor_control_set_pwm(900, 1500);
-//		}
-		motor_control_set_pwm(1500, 1500);
+		const uint32_t sweep_now_ms = HAL_GetTick();
+		const uint32_t phase_elapsed_ms = sweep_now_ms - search_sweep_phase_start_ms;
+
+		/* Which side gets the shorter flick vs the longer sweep swaps every
+		 * full left-right pair, so the net rotation cancels out over two
+		 * cycles instead of drifting continuously in one direction. */
+		const uint32_t left_phase_ms  = search_sweep_bias_left ? SEARCH_SWEEP_LEFT_MS  : SEARCH_SWEEP_RIGHT_MS;
+		const uint32_t right_phase_ms = search_sweep_bias_left ? SEARCH_SWEEP_RIGHT_MS : SEARCH_SWEEP_LEFT_MS;
+		uint32_t phase_duration_ms = search_sweep_going_left ? left_phase_ms : right_phase_ms;
+
+				if (search_phase_step == 0U || search_phase_step == 4U) {
+					phase_duration_ms = SEARCH_SWEEP_LEFT_MS;
+				} else if (search_phase_step == 1U || search_phase_step == 3U || search_phase_step == 5U) {
+					phase_duration_ms = SEARCH_SWEEP_PAUSE_MS;
+				} else if (search_phase_step == 2U) {
+					phase_duration_ms = SEARCH_SWEEP_RIGHT_MS;
+				}
+
+		if (search_phase_step < 6U){
+			if (phase_elapsed_ms >= phase_duration_ms)
+			{
+//				if (search_sweep_going_left == 0U)
+//				{
+//					/* Just finished a right phase, about to go left again —
+//					 * a full pair completed, so flip the bias for next pair. */
+//					search_sweep_bias_left = !search_sweep_bias_left;
+//				}
+				search_sweep_going_left = !search_sweep_going_left;
+				search_sweep_phase_start_ms = sweep_now_ms;
+				search_phase_step++;
+			}
+		}
+
+		switch (search_phase_step){
+			case 0U:
+				motor_control_set_pwm(2000, 1000);
+				break;
+			case 1U:
+				motor_control_set_pwm(1500, 1500);
+				break;
+			case 2U:
+				motor_control_set_pwm(1000, 2000);
+				break;
+			case 3U:
+				motor_control_set_pwm(1500, 1500);
+				break;
+			case 4U:
+				motor_control_set_pwm(2000, 1000);
+				break;
+			case 5U:
+				motor_control_set_pwm(1500, 1500);
+				break;
+			case 6U:
+				motor_control_set_pwm(1900, 1900);
+				break;
+			default:
+				motor_control_set_pwm(1500, 1500);
+				break;
+		}
+
+
 		motor_control_update();
 		break;
 	}

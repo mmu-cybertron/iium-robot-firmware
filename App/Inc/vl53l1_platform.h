@@ -128,7 +128,7 @@
  * 2= warning: low return signal level
  * 4-7 errors
  *******************************************/
-#define VL53L1__RANGE_STATUS_THRESH	(1)		// acceptable values: 0,1,2,4,7
+#define VL53L1__RANGE_STATUS_THRESH	(0)		// acceptable values: 0,1,2,4,7
 
 /*|||||||| END OF USER/PROJECT PARAMETERS ||||||||*/
 

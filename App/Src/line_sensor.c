@@ -59,6 +59,8 @@ void line_sensor_init(void)
 
 static uint16_t left_adc;
 static uint16_t right_adc;
+static uint16_t rear_left_adc;
+static uint16_t rear_right_adc;
 
 edge_status_t line_sensor_read_edges(void)
 {
@@ -66,10 +68,13 @@ edge_status_t line_sensor_read_edges(void)
 	left_adc = line_sensor_read_adc(IR3_ADC_CHANNEL);
 	right_adc = line_sensor_read_adc(IR4_ADC_CHANNEL);
 
+	rear_left_adc = line_sensor_read_adc(4U);
+	rear_right_adc = line_sensor_read_adc(6U);
+
     status.front_left = (left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
     status.front_right = (right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
-    status.rear_left = 0U;
-    status.rear_right = 0U;
+    status.rear_left = (rear_left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
+    status.rear_right = (rear_right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
 
     return status;
 }
