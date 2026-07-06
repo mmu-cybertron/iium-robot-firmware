@@ -5,6 +5,8 @@
 #define IR_ANALOG_TIMEOUT_MS 1U
 #define IR3_ADC_CHANNEL 9U
 #define IR4_ADC_CHANNEL 8U
+#define REAR_LEFT_ADC_CHANNEL 6U
+#define REAR_RIGHT_ADC_CHANNEL 4U
 
 static uint8_t adc_initialized;
 
@@ -14,12 +16,11 @@ static void line_sensor_adc_init_once(void)
         return;
     }
 
-    GPIO_InitTypeDef gpio = {0};
-
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_ADC1_CLK_ENABLE();
 
-    gpio.Pin = IR3_DO_Pin | IR4_DO_Pin;
+    GPIO_InitTypeDef gpio = {0};
+    gpio.Pin = GPIO_PIN_0 | GPIO_PIN_1; // PB0, PB1
     gpio.Mode = GPIO_MODE_ANALOG;
     gpio.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &gpio);
@@ -27,13 +28,13 @@ static void line_sensor_adc_init_once(void)
     ADC1->CR1 = 0U;
     ADC1->CR2 = 0U;
     ADC1->SQR1 = 0U;
-    ADC1->SMPR2 |= ADC_SMPR2_SMP8 | ADC_SMPR2_SMP9;
+    ADC1->SMPR2 |= ADC_SMPR2_SMP4 | ADC_SMPR2_SMP6 | ADC_SMPR2_SMP8 | ADC_SMPR2_SMP9;
     ADC1->CR2 |= ADC_CR2_ADON;
 
     adc_initialized = 1U;
 }
 
-static uint16_t line_sensor_read_adc(uint32_t channel)
+uint16_t line_sensor_read_adc(uint32_t channel)
 {
     const uint32_t start_ms = HAL_GetTick();
 
@@ -49,7 +50,7 @@ static uint16_t line_sensor_read_adc(uint32_t channel)
         }
     }
 
-    return (uint16_t)ADC1->DR;
+    return (uint16_t)(ADC1->DR & 0xFFF);
 }
 
 void line_sensor_init(void)
@@ -59,17 +60,21 @@ void line_sensor_init(void)
 
 static uint16_t left_adc;
 static uint16_t right_adc;
+static uint16_t rear_left_adc;
+static uint16_t rear_right_adc;
 
 edge_status_t line_sensor_read_edges(void)
 {
     edge_status_t status;
 	left_adc = line_sensor_read_adc(IR3_ADC_CHANNEL);
 	right_adc = line_sensor_read_adc(IR4_ADC_CHANNEL);
+    rear_left_adc = line_sensor_read_adc(REAR_LEFT_ADC_CHANNEL);
+    rear_right_adc = line_sensor_read_adc(REAR_RIGHT_ADC_CHANNEL);
 
     status.front_left = (left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
     status.front_right = (right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
-    status.rear_left = 0U;
-    status.rear_right = 0U;
+    status.rear_left = (rear_left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
+    status.rear_right = (rear_right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
 
     return status;
 }

@@ -11,7 +11,7 @@
 #include "vesc/vescuart.h"
 
 #define VESC_SETUP 0
-#define ROBOT_EDGE_IR_DEBUG 0
+#define ROBOT_EDGE_IR_DEBUG 1
 
 void robot_init(void)
 {
@@ -119,4 +119,3 @@ void robot_background(void)
 {
     state_machine_background();
 }
-
