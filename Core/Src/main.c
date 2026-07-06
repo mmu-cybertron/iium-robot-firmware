@@ -463,6 +463,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PA4 PA6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LED_D6_Pin LED_D7_Pin XSHUT_1_Pin XSHUT_2_Pin
                            XSHUT_3_Pin XSHUT_4_Pin XSHUT_5_Pin */
   GPIO_InitStruct.Pin = LED_D6_Pin|LED_D7_Pin|XSHUT_1_Pin|XSHUT_2_Pin

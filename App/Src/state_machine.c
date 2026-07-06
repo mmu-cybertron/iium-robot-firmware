@@ -13,7 +13,7 @@
 #include "vl53l1_platform.h"
 
 #define EDGE_TEST ROBOT_EDGE_SENSOR_ENABLE
-#define OPPONENT_TEST 1
+#define OPPONENT_TEST 0
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -124,6 +124,12 @@ static void edge_escape_drive_turn(robot_edge_escape_mode_t escape_mode)
 		break;
 	case ROBOT_ESCAPE_BACK:
 		motor_control_set_pwm(900, 900);
+		break;
+	case ROBOT_ESCAPE_FRONT_LEFT:
+		motor_control_set_pwm(1000, 2150);
+		break;
+	case ROBOT_ESCAPE_FRONT_RIGHT:
+		motor_control_set_pwm(2150, 1000);
 		break;
 	case ROBOT_ESCAPE_FRONT:
 		motor_control_set_pwm(2250, 2250);
@@ -622,7 +628,7 @@ void state_machine_update(void)
 #else
 	case ROBOT_STATE_SEARCH:
 		stop_command_sent = 0U;
-		motor_control_set_pwm(2250, 2250);
+		motor_control_set_pwm(1900, 1900);
 		break;
 #endif
 
