@@ -41,6 +41,9 @@ static uint32_t opponent_left_last_seen_ms = 0;
 static uint32_t opponent_right_last_seen_ms = 0;
 static uint32_t opponent_left_cooldown_until_ms = 0;
 static uint32_t opponent_right_cooldown_until_ms = 0;
+static uint32_t attack_start_ms = 0;
+static uint32_t stalemate_phase_start_ms = 0;
+static uint8_t stalemate_phase = 0;
 static uint32_t last_vesc_fault_poll_time = 0;
 static uint32_t vesc_fault_start_time = 0;
 static volatile uint8_t is_escaping = 0;
@@ -141,44 +144,58 @@ static void edge_escape_drive_turn(robot_edge_escape_mode_t escape_mode)
 	}
 }
 
-static void edge_escape_execute_blocking(void)
+static uint8_t edge_escape_phase = 0;
+
+static void edge_escape_execute_non_blocking(void)
 {
 	const robot_edge_escape_mode_t escape_mode = current_escape_mode;
 	const uint32_t turn_ms = EDGE_ESCAPE_DURATION_MS - EDGE_ESCAPE_BACKUP_MS;
+	const uint32_t elapsed_ms = HAL_GetTick() - escape_start_time;
 
 	search_initialized = 0U;
 	current_state = ROBOT_STATE_EDGE_ESCAPE;
 
-	motor_control_set_pwm(1500, 1500);
-	motor_control_update();
-
-	if (escape_mode == ROBOT_ESCAPE_FRONT)
-		{
-			motor_control_set_pwm(2000, 2000); // Drive forward to escape rear edge
-		}
-		else
-		{
-			motor_control_set_pwm(1000, 1000); // Drive backward to escape front edge
-		}
-
-	motor_control_update();
-	const uint32_t recovery_start_ms = HAL_GetTick();
-	distance_sensor_recover_during_edge_escape();
-	const uint32_t recovery_elapsed_ms = HAL_GetTick() - recovery_start_ms;
-	if (recovery_elapsed_ms < EDGE_ESCAPE_BACKUP_MS)
+	switch (edge_escape_phase)
 	{
-		HAL_Delay(EDGE_ESCAPE_BACKUP_MS - recovery_elapsed_ms);
+		case 0:
+			/* Phase 0: Start Backup and Recover Sensors */
+			if (escape_mode == ROBOT_ESCAPE_FRONT) {
+				motor_control_set_pwm(2000, 2000); // Drive forward to escape rear edge
+			} else {
+				motor_control_set_pwm(1000, 1000); // Drive backward to escape front edge
+			}
+			motor_control_update();
+			
+			/* Perform necessary but blocking sensor recovery while hardware backs up */
+			distance_sensor_recover_during_edge_escape();
+			
+			edge_escape_phase = 1;
+			break;
+
+		case 1:
+			/* Phase 1: Wait for backup time, then start turning */
+			if (elapsed_ms >= EDGE_ESCAPE_BACKUP_MS)
+			{
+				edge_escape_drive_turn(escape_mode);
+				motor_control_update();
+				edge_escape_phase = 2;
+			}
+			break;
+
+		case 2:
+			/* Phase 2: Wait for turn time, then exit */
+			if (elapsed_ms >= (EDGE_ESCAPE_BACKUP_MS + turn_ms))
+			{
+				current_escape_mode = ROBOT_ESCAPE_NONE;
+				is_escaping = 0U;
+				escape_timer_started = 0U;
+				edge_escape_phase = 0;
+				current_state = ROBOT_STATE_SEARCH;
+				motor_control_set_pwm(1500, 1500);
+				motor_control_update();
+			}
+			break;
 	}
-
-	edge_escape_drive_turn(escape_mode);
-	motor_control_update();
-	HAL_Delay(turn_ms);
-
-	current_escape_mode = ROBOT_ESCAPE_NONE;
-	is_escaping = 0U;
-	escape_timer_started = 0U;
-	current_state = ROBOT_STATE_SEARCH;
-	motor_control_set_pwm(2150, 2150);
 }
 
 static void edge_process_detection(void)
@@ -398,7 +415,7 @@ void state_machine_update(void)
 #if EDGE_TEST
 	else if (is_escaping)
 	{
-		edge_escape_execute_blocking();
+		edge_escape_execute_non_blocking();
 		return;
 	}
 #endif
@@ -498,6 +515,19 @@ void state_machine_update(void)
 	}
 #endif
 
+	if (current_state == ROBOT_STATE_ATTACK) {
+		if (previous_state != ROBOT_STATE_ATTACK && previous_state != ROBOT_STATE_STALEMATE_BREAKER) {
+			attack_start_ms = now_ms;
+		}
+		if ((now_ms - attack_start_ms) >= 2000U) {
+			current_state = ROBOT_STATE_STALEMATE_BREAKER;
+			if (previous_state != ROBOT_STATE_STALEMATE_BREAKER) {
+				stalemate_phase_start_ms = now_ms;
+				stalemate_phase = 0;
+			}
+		}
+	}
+
 	switch (current_state)
 	{
 
@@ -520,6 +550,27 @@ void state_machine_update(void)
 		}
 
 		// LOG_PRINT("Attacking\n");
+		opponent_debug_leds(&opponent);
+		break;
+	}
+
+	case ROBOT_STATE_STALEMATE_BREAKER:
+	{
+		stop_command_sent = 0U;
+		const uint32_t stalemate_elapsed = now_ms - stalemate_phase_start_ms;
+		if (stalemate_phase == 0) {
+			motor_control_set_pwm(2050, 1500);
+			if (stalemate_elapsed >= 150U) {
+				stalemate_phase = 1;
+				stalemate_phase_start_ms = now_ms;
+			}
+		} else {
+			motor_control_set_pwm(1500, 2050);
+			if (stalemate_elapsed >= 150U) {
+				stalemate_phase = 0;
+				stalemate_phase_start_ms = now_ms;
+			}
+		}
 		opponent_debug_leds(&opponent);
 		break;
 	}

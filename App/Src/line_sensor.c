@@ -9,6 +9,7 @@
 #define REAR_RIGHT_ADC_CHANNEL 4U
 
 static uint8_t adc_initialized;
+static volatile uint16_t adc_buffer[4] = {4095U, 4095U, 4095U, 4095U};
 
 static void line_sensor_adc_init_once(void)
 {
@@ -18,6 +19,7 @@ static void line_sensor_adc_init_once(void)
 
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_ADC1_CLK_ENABLE();
+    __HAL_RCC_DMA2_CLK_ENABLE();
 
     GPIO_InitTypeDef gpio = {0};
     gpio.Pin = GPIO_PIN_0 | GPIO_PIN_1; // PB0, PB1
@@ -25,32 +27,56 @@ static void line_sensor_adc_init_once(void)
     gpio.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &gpio);
 
-    ADC1->CR1 = 0U;
-    ADC1->CR2 = 0U;
-    ADC1->SQR1 = 0U;
+    // Disable ADC
+    ADC1->CR2 &= ~ADC_CR2_ADON;
+
+    // Configure DMA2 Stream0 Channel 0 for ADC1
+    DMA2_Stream0->CR = 0;
+    while (DMA2_Stream0->CR & DMA_SxCR_EN); // wait for disable
+
+    DMA2_Stream0->PAR = (uint32_t)&ADC1->DR;
+    DMA2_Stream0->M0AR = (uint32_t)adc_buffer;
+    DMA2_Stream0->NDTR = 4;
+
+    // CHSEL = 0, MSIZE = 1 (16-bit), PSIZE = 1 (16-bit), MINC = 1, CIRC = 1, DIR = 0 (P2M)
+    DMA2_Stream0->CR = (0U << DMA_SxCR_CHSEL_Pos) |
+                       (1U << DMA_SxCR_MSIZE_Pos) |
+                       (1U << DMA_SxCR_PSIZE_Pos) |
+                       DMA_SxCR_MINC |
+                       DMA_SxCR_CIRC |
+                       (0U << DMA_SxCR_DIR_Pos);
+
+    DMA2_Stream0->CR |= DMA_SxCR_EN;
+
+    // ADC Config: Scan mode, Continuous conversion, DMA continuous requests
+    ADC1->CR1 = ADC_CR1_SCAN; 
+    ADC1->CR2 = ADC_CR2_CONT | ADC_CR2_DMA | ADC_CR2_DDS;
+    
+    // Set sequence: CH4, CH6, CH8, CH9
+    ADC1->SQR1 = (3U << 20); // L = 3 (4 conversions)
+    ADC1->SQR3 = (4U << 0) | (6U << 5) | (8U << 10) | (9U << 15);
+    
     ADC1->SMPR2 |= ADC_SMPR2_SMP4 | ADC_SMPR2_SMP6 | ADC_SMPR2_SMP8 | ADC_SMPR2_SMP9;
+
+    // Enable ADC
     ADC1->CR2 |= ADC_CR2_ADON;
+
+    // Start continuous conversion
+    ADC1->CR2 |= ADC_CR2_SWSTART;
 
     adc_initialized = 1U;
 }
 
 uint16_t line_sensor_read_adc(uint32_t channel)
 {
-    const uint32_t start_ms = HAL_GetTick();
-
     line_sensor_adc_init_once();
 
-    ADC1->SQR3 = channel;
-    ADC1->SR = 0U;
-    ADC1->CR2 |= ADC_CR2_SWSTART;
+    if (channel == REAR_RIGHT_ADC_CHANNEL) return adc_buffer[0]; // CH4
+    if (channel == REAR_LEFT_ADC_CHANNEL) return adc_buffer[1];  // CH6
+    if (channel == IR4_ADC_CHANNEL) return adc_buffer[2];        // CH8
+    if (channel == IR3_ADC_CHANNEL) return adc_buffer[3];        // CH9
 
-    while ((ADC1->SR & ADC_SR_EOC) == 0U) {
-        if ((HAL_GetTick() - start_ms) > IR_ANALOG_TIMEOUT_MS) {
-            return 4095U;
-        }
-    }
-
-    return (uint16_t)(ADC1->DR & 0xFFF);
+    return 4095U;
 }
 
 void line_sensor_init(void)
