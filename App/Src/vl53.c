@@ -1,6 +1,8 @@
 #include "vl53.h"
 #include "stdio.h"
 
+// VL53L0, NOT L1! 
+
 I2C_HandleTypeDef *hi2c = NULL;
 uint8_t stop_variable;
 uint32_t measurement_timing_budget_us;

@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void app_main(void);
+void app_main_test(void);
 
 #ifdef __cplusplus
 }

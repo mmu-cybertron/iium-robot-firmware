@@ -354,37 +354,37 @@ uint8_t VL53L1__InitAll(void) {
     uint32_t t = HAL_GetTick();
 
 	// Experimental by Lim Zing! Disabble Disable ready check
-    while (!dataReady) {
-        if (VL53L1X_CheckForDataReady(addr, &dataReady) != 0) {
-            return 1U;
-        }
-        if ((HAL_GetTick() - t) > 3U) {
-            return 1U;
-        }
-        HAL_Delay(1);
+    // while (!dataReady) {
+    //     if (VL53L1X_CheckForDataReady(addr, &dataReady) != 0) {
+    //         return 1U;
+    //     }
+    //     if ((HAL_GetTick() - t) > 3U) {
+    //         return 1U;
+    //     }
+    //     HAL_Delay(1);
 
-    }
+    // }
 
     uint8_t  rangeStatus;
     uint16_t distance;
     uint8_t status = 0U;
 
-    status |= VL53L1X_GetRangeStatus(addr, &rangeStatus);
+    // status |= VL53L1X_GetRangeStatus(addr, &rangeStatus);
     status |= VL53L1X_GetDistance(addr, &distance);
-    status |= VL53L1X_ClearInterrupt(addr);
-    if (status != 0U) {
-		last_i2c_error_code = HAL_I2C_GetError(&hi2c1);
-		last_i2c_state = (uint32_t)HAL_I2C_GetState(&hi2c1);
-	}
+    // status |= VL53L1X_ClearInterrupt(addr);
+    // if (status != 0U) {
+	// 	last_i2c_error_code = HAL_I2C_GetError(&hi2c1);
+	// 	last_i2c_state = (uint32_t)HAL_I2C_GetState(&hi2c1);
+	// }
 
-    if (status != 0U) {
-    return 1U; // real sensor/I2C failure
-}
+    // if (status != 0U) {
+    // return 1U; // real sensor/I2C failure
+	// }
 
-	if (rangeStatus > VL53L1__RANGE_STATUS_THRESH) {
-		*distance_mm = 8191U; // no valid target, but sensor is alive
-		return 0U;
-	}
+	// if (rangeStatus > VL53L1__RANGE_STATUS_THRESH) {
+	// 	*distance_mm = 8191U; // no valid target, but sensor is alive
+	// 	return 0U;
+	// }
 
     *distance_mm = distance;
     return 0U;

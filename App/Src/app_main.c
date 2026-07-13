@@ -14,11 +14,9 @@
 #include "distance_sensor.h"
 #include "vl53l1_platform.h"
 #include "VL53L1X_api.h"
-#include "vesc/vescuart.h"
 
 extern uint32_t HAL_GetTick(void);
-extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart2;
+
 #define SM_Signal_Pin GPIO_PIN_13
 #define SM_Signal_GPIO_Port GPIOC
 
