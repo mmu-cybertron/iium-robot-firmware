@@ -61,10 +61,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define SM_Signal_Pin GPIO_PIN_13
 #define SM_Signal_GPIO_Port GPIOC
-#define IR4_DO_Pin GPIO_PIN_0
-#define IR4_DO_GPIO_Port GPIOB
-#define IR3_DO_Pin GPIO_PIN_1
-#define IR3_DO_GPIO_Port GPIOB
 #define IR2_DO_Pin GPIO_PIN_2
 #define IR2_DO_GPIO_Port GPIOB
 #define IR2_DO_EXTI_IRQn EXTI2_IRQn

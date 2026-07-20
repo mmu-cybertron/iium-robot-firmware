@@ -52,6 +52,7 @@ extern uint32_t HAL_GetTick(void);
 /* New Strategy PWMs */
 #define MOTOR_JHOOK_FAST_PWM    (MOTOR_PWM_NEUTRAL + 550)
 #define MOTOR_JHOOK_SLOW_PWM    (MOTOR_PWM_NEUTRAL + 150)
+#define MOTOR_RAM_PWM           (2250) // Max PWM for aggressive rush
 
 /* State variables */
 static mode_selector_state_t current_state = MODE_SEL_IDLE;
@@ -250,17 +251,31 @@ void game_mode_selector_execute_initial_move(void)
 
     switch (selected_mode) {
         case GAME_MODE_1:
-            /* Mode 1: J-Hook Left (Arcing forward-left for 1 second) */
-            if (elapsed_ms < FORWARD_DURATION_MS) {
-                cmd.left_pwm = MOTOR_JHOOK_SLOW_PWM;
-                cmd.right_pwm = MOTOR_JHOOK_FAST_PWM;
-                motor_control_set_command(cmd);
-            } else {
-                /* Done */
-                motor_control_stop();
-                initial_move_in_progress = 0;
-                initial_move_phase = 0;
-                LOG_PRINT("Initial move complete - Mode 1 (J-Hook Left)\r\n");
+            /* Mode 1: The Flanker (Arc left for 500ms, then charge forward 500ms) */
+            if (initial_move_phase == 1) {
+                if (elapsed_ms < 500) {
+                    /* J-Hook Left */
+                    cmd.left_pwm = MOTOR_JHOOK_SLOW_PWM;
+                    cmd.right_pwm = MOTOR_JHOOK_FAST_PWM;
+                    motor_control_set_command(cmd);
+                } else {
+                    initial_move_phase = 2;
+                    initial_move_start_time = now_ms;
+                }
+            } else if (initial_move_phase == 2) {
+                elapsed_ms = now_ms - initial_move_start_time;
+                if (elapsed_ms < 500) {
+                    /* Charge straight into the flank */
+                    cmd.left_pwm = MOTOR_RAM_PWM;
+                    cmd.right_pwm = MOTOR_RAM_PWM;
+                    motor_control_set_command(cmd);
+                } else {
+                    /* Done */
+                    motor_control_stop();
+                    initial_move_in_progress = 0;
+                    initial_move_phase = 0;
+                    LOG_PRINT("Initial move complete - Mode 1 (The Flanker)\r\n");
+                }
             }
             break;
 
@@ -294,17 +309,17 @@ void game_mode_selector_execute_initial_move(void)
             break;
 
         case GAME_MODE_3:
-            /* Move forward 1s only */
+            /* Mode 3: The Ram (Full speed rush for 1s) */
             if (elapsed_ms < FORWARD_DURATION_MS) {
-                cmd.left_pwm = MOTOR_FORWARD_PWM;
-                cmd.right_pwm = MOTOR_FORWARD_PWM;
+                cmd.left_pwm = MOTOR_RAM_PWM;
+                cmd.right_pwm = MOTOR_RAM_PWM;
                 motor_control_set_command(cmd);
             } else {
                 /* Done */
                 motor_control_stop();
                 initial_move_in_progress = 0;
                 initial_move_phase = 0;
-                LOG_PRINT("Initial move complete - Mode 3\r\n");
+                LOG_PRINT("Initial move complete - Mode 3 (The Ram)\r\n");
             }
             break;
 

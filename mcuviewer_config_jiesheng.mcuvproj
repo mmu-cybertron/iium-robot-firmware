@@ -1,0 +1,416 @@
+[elf]
+file_path = Debug\sumo-robot.elf
+relative_path = true
+
+[general]
+version = 2
+
+[settings]
+sample_frequency_hz = 5000
+max_points = 30000
+max_viewport_points = 5000
+viewport_width_ms = 2000.000000
+refresh_on_elf_change = true
+stop_acq_on_elf_change = true
+probe_type = 0
+target_name = 
+probe_mode = 0
+probe_speed_khz = 24000
+probe_sn = 51FF71064988504857270787
+should_log = false
+log_directory = 
+gdb_command = ./gdb
+elf_parser = gdb
+recorder_enabled = false
+restart_on_group_change = true
+keep_connection = true
+ip_address = 127.0.0.1
+port = 3333
+probe_baudrate = 115200
+jlink_script_enabled = false
+jlink_script_path = 
+jlink_connection_type = 0
+cubeprog_api_path = 
+mcp_server_port = 8765
+
+[flashing]
+file_path = 
+command = 
+use_elf_file = false
+timeout_enabled = false
+timeout_seconds = 5
+
+[trace_settings]
+core_frequency = 160000
+trace_prescaler = 10
+max_points = 10000
+max_viewport_points_percent = 10
+viewport_width_ms = 5.000000
+trigger_channel = -1
+trigger_level = 0.900000
+timeout = 2
+probe_type = 0
+target_name = 
+probe_speed_khz = 10000
+probe_sn = 
+should_log = false
+log_directory = 
+
+[var0]
+name = front_failure_count
+tracked_name = front_failure_count
+address = 536871128
+type = 5
+color = 3598249784
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var1]
+name = front_mm
+tracked_name = front_mm
+address = 536870914
+type = 3
+color = 3425991265
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var2]
+name = last_status.distance_mm
+tracked_name = last_status.distance_mm
+address = 536871062
+type = 3
+color = 2285459367
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var3]
+name = last_status.front
+tracked_name = last_status.front
+address = 536871056
+type = 1
+color = 1328959129
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var4]
+name = last_status.left
+tracked_name = last_status.left
+address = 536871057
+type = 1
+color = 661811444
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var5]
+name = last_status.right
+tracked_name = last_status.right
+address = 536871058
+type = 1
+color = 4074147377
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var6]
+name = left_failure_count
+tracked_name = left_failure_count
+address = 536871124
+type = 5
+color = 3854934949
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var7]
+name = left_mm
+tracked_name = left_mm
+address = 536870912
+type = 3
+color = 229883840
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var8]
+name = right_failure_count
+tracked_name = right_failure_count
+address = 536871132
+type = 5
+color = 75268510
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var9]
+name = right_mm
+tracked_name = right_mm
+address = 536870916
+type = 3
+color = 3764539461
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[group0]
+name = new group0
+acquisition_type = 0
+
+[group0-plot0]
+name = new plot0
+type = 0
+visibility = true
+secondary_write_enabled = false
+
+[group0-plot0-series0]
+name = last_status.front
+visibility = true
+format = DEC
+
+[group0-plot0-series1]
+name = last_status.left
+visibility = true
+format = DEC
+
+[group0-plot0-series2]
+name = last_status.right
+visibility = true
+format = DEC
+
+[group0-plot1]
+name = new plot1
+type = 0
+visibility = true
+secondary_write_enabled = false
+
+[group0-plot1-series0]
+name = front_mm
+visibility = true
+format = DEC
+
+[group0-plot1-series1]
+name = left_mm
+visibility = true
+format = DEC
+
+[group0-plot1-series2]
+name = right_mm
+visibility = true
+format = DEC
+
+[group0-plot2]
+name = new plot2
+type = 0
+visibility = true
+secondary_write_enabled = false
+
+[group0-plot2-series0]
+name = front_failure_count
+visibility = true
+format = DEC
+
+[group0-plot2-series1]
+name = left_failure_count
+visibility = true
+format = DEC
+
+[group0-plot2-series2]
+name = right_failure_count
+visibility = true
+format = DEC
+
+[group1]
+name = new sampling group0
+acquisition_type = 0
+
+[group1-plot0]
+name = new plot0
+type = 0
+visibility = true
+secondary_write_enabled = false
+
+[group1-plot0-series0]
+name = front_mm
+visibility = true
+format = DEC
+
+[group1-plot0-series1]
+name = left_mm
+visibility = true
+format = DEC
+
+[group1-plot0-series2]
+name = right_mm
+visibility = true
+format = DEC
+
+[group1-plot1]
+name = new table0
+type = 2
+visibility = true
+secondary_write_enabled = false
+
+[group2]
+name = new sampling group1
+acquisition_type = 0
+
+[group2-plot0]
+name = new plot0
+type = 0
+visibility = true
+secondary_write_enabled = false
+
+[group2-plot0-series0]
+name = front_failure_count
+visibility = true
+format = DEC
+
+[group2-plot0-series1]
+name = left_failure_count
+visibility = true
+format = DEC
+
+[group2-plot0-series2]
+name = right_failure_count
+visibility = true
+format = DEC
+
+[group2-plot1]
+name = new table0
+type = 2
+visibility = true
+secondary_write_enabled = false
+
+[trace_plot0]
+name = CH0
+alias = CH0
+visibility = true
+domain = 1
+
+[trace_plot1]
+name = CH1
+alias = CH1
+visibility = true
+domain = 1
+
+[trace_plot2]
+name = CH2
+alias = CH2
+visibility = true
+domain = 1
+
+[trace_plot3]
+name = CH3
+alias = CH3
+visibility = true
+domain = 1
+
+[trace_plot4]
+name = CH4
+alias = CH4
+visibility = true
+domain = 1
+
+[trace_plot5]
+name = CH5
+alias = CH5
+visibility = true
+domain = 1
+
+[trace_plot6]
+name = CH6
+alias = CH6
+visibility = true
+domain = 1
+
+[trace_plot7]
+name = CH7
+alias = CH7
+visibility = true
+domain = 1
+
+[trace_plot8]
+name = CH8
+alias = CH8
+visibility = true
+domain = 1
+
+[trace_plot9]
+name = CH9
+alias = CH9
+visibility = true
+domain = 1

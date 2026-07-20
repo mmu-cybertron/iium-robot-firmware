@@ -12,8 +12,7 @@ typedef enum {
     ROBOT_STATE_ATTACK,
     ROBOT_STATE_EDGE_ESCAPE,
     ROBOT_STATE_RECOVER,
-    ROBOT_STATE_FAULT,
-    ROBOT_STATE_STALEMATE_BREAKER
+    ROBOT_STATE_FAULT
 } robot_state_t;
 
 typedef enum {

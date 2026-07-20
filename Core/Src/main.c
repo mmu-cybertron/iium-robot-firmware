@@ -451,23 +451,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SM_Signal_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IR4_DO_Pin IR3_DO_Pin Mode_Button_Pin Confirm_Button_Pin */
-  GPIO_InitStruct.Pin = IR4_DO_Pin|IR3_DO_Pin|Mode_Button_Pin|Confirm_Button_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
   /*Configure GPIO pins : IR2_DO_Pin IR1_DO_Pin */
   GPIO_InitStruct.Pin = IR2_DO_Pin|IR1_DO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA4 PA6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_6;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  /*Configure GPIO pins : Mode_Button_Pin Confirm_Button_Pin */
+  GPIO_InitStruct.Pin = Mode_Button_Pin|Confirm_Button_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LED_D6_Pin LED_D7_Pin XSHUT_1_Pin XSHUT_2_Pin
                            XSHUT_3_Pin XSHUT_4_Pin XSHUT_5_Pin */

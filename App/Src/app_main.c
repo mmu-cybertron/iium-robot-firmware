@@ -197,6 +197,9 @@ void app_main(void)
     LOG_PRINT("\n--- INITIAL MOVE PHASE ---\r\n");
     LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
 
+    /* Force the first call to start the move */
+    game_mode_selector_execute_initial_move();
+
     while (!game_mode_selector_is_initial_move_done()) {
         /* Call initial move executor */
         game_mode_selector_execute_initial_move();
