@@ -15,26 +15,32 @@
 uint8_t  status;
 uint16_t left = 0, front = 0, right = 0, rr = 0, rl = 0;
 
-uint32_t fail_left  = 0;
-uint32_t fail_front = 0;
-uint32_t fail_right = 0;
+uint8_t status_left=0;
+uint8_t status_front =0;
+uint8_t status_right = 0;
 
-static void vl53_fail_and_halt(void)
+
+/* LED-to-sensor mapping:
+ *   LED_D6 -> left sensor  (VL53L1__ADDR_LEFT)
+ *   LED_D7 -> front sensor (VL53L1__ADDR_FRONT)
+ *   LED_D8 -> right sensor (VL53L1__ADDR)
+ */
+
+static void vl53_fail_and_halt(led_id_t failed_led)
 {
-    printf("[VL53] Communication failure — blinking for %u ms then halting\r\n", VL53_FAIL_BLINK_MS);
     motor_driver_brake();
 
     uint32_t start = HAL_GetTick();
     while (HAL_GetTick() - start < VL53_FAIL_BLINK_MS) {
-        led_all_on();
+        led_on(failed_led);
         HAL_Delay(VL53_BLINK_PERIOD_MS);
-        led_all_off();
+        led_off(failed_led);
         HAL_Delay(VL53_BLINK_PERIOD_MS);
     }
 
-    /* halt */
+    /* halt with the failed sensor's LED solid on */
     while (1) {
-        led_all_off();
+        led_on(failed_led);
     }
 }
 
@@ -47,7 +53,15 @@ void app_main_test(void)
     status = VL53L1__InitAll();
     if (status != 0) {
         printf("[VL53L1] Init failed (status=%u)\r\n", (unsigned int)status);
-        vl53_fail_and_halt();
+        /* all three blink — unknown which sensor failed at init */
+        uint32_t start = HAL_GetTick();
+        while (HAL_GetTick() - start < VL53_FAIL_BLINK_MS) {
+            led_all_on();
+            HAL_Delay(VL53_BLINK_PERIOD_MS);
+            led_all_off();
+            HAL_Delay(VL53_BLINK_PERIOD_MS);
+        }
+        while (1) { led_all_on(); }
     } else {
         printf("[VL53L1] Init OK\r\n");
     }
@@ -67,15 +81,20 @@ void app_main_test(void)
         }
         motor_driver_set_pwm(current_pwm, current_pwm);
 
-        uint8_t failure_mask = VL53L1__ReadAll(&left, &front, &right, &rr, &rl);
+        status_left  = VL53L1X_GetDistance(VL53L1__ADDR_LEFT, &left);
+        status_front = VL53L1X_GetDistance(VL53L1__ADDR_FRONT, &front);
+        status_right = VL53L1X_GetDistance(VL53L1__ADDR, &right);
 
-        if (failure_mask & 0x01) fail_left++;
-        if (failure_mask & 0x02) fail_front++;
-        if (failure_mask & 0x04) fail_right++;
+        if (status_left != 0) {
+            vl53_fail_and_halt(LED_D6);  /* LED_D6 = left sensor */
+        }
 
-        if (failure_mask != 0) {
+        if (status_front != 0) {
+            vl53_fail_and_halt(LED_D7);  /* LED_D7 = front sensor */
+        }
 
-            vl53_fail_and_halt();
+        if (status_right != 0) {
+            vl53_fail_and_halt(LED_D8);  /* LED_D8 = right sensor */
         }
     }
 }
