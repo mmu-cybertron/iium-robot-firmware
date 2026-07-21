@@ -12,8 +12,7 @@
 #include "game_mode_selector.h"
 #include "motor_control.h"
 #include "distance_sensor.h"
-#include "vl53l1_platform.h"
-#include "VL53L1X_api.h"
+
 #include "vesc/vescuart.h"
 
 extern uint32_t HAL_GetTick(void);
@@ -239,13 +238,10 @@ void app_main(void)
 
             if ((now_ms - last_sensor_log_ms) >= 200U) {
                 last_sensor_log_ms = now_ms;
-                LOG_PRINT("[TOF] F:%d L:%d R:%d RR:%d RL:%d dist:%umm\r\n",
+                LOG_PRINT("[SHARP IR] F:%d L:%d R:%d\r\n",
                         (int)tofData.front,
                         (int)tofData.left,
-                        (int)tofData.right,
-                        (int)tofData.rear_right,
-                        (int)tofData.rear_left,
-                        (unsigned int)tofData.distance_mm);
+                        (int)tofData.right);
             }
             #endif
 

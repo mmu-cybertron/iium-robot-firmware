@@ -165,7 +165,7 @@ static void edge_escape_execute_blocking(void)
 
 	motor_control_update();
 	const uint32_t recovery_start_ms = HAL_GetTick();
-	distance_sensor_recover_during_edge_escape();
+	// Removed distance_sensor_recover_during_edge_escape() as it's not needed for Sharp IR
 	const uint32_t recovery_elapsed_ms = HAL_GetTick() - recovery_start_ms;
 	if (recovery_elapsed_ms < EDGE_ESCAPE_BACKUP_MS)
 	{
@@ -560,15 +560,6 @@ void state_machine_update(void)
 			search_phase_step = 0U;
 			search_sweep_phase_start_ms = now_ms;
 			search_initialized = 1U;
-		}
-
-		if (distance_sensor_needs_recovery())
-		{
-			motor_control_set_pwm(1500, 1500);
-			motor_control_update();
-			distance_sensor_recover_during_edge_escape();
-			search_sweep_phase_start_ms = HAL_GetTick();
-			break;
 		}
 
 		const uint32_t sweep_now_ms = HAL_GetTick();
