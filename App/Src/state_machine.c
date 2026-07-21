@@ -527,7 +527,7 @@ void state_machine_update(void)
 		const int front_mm = front_mm_return();
 		if (front_mm > 0 && front_mm <= 1000)
 		{
-			motor_control_set_pwm(2150, 2150);
+			motor_control_set_pwm(1750, 1750);
 		}
 
 		// LOG_PRINT("Attacking\n");
