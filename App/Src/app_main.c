@@ -1,3 +1,4 @@
+#include "main.h"
 #include "app_main.h"
 
 #include <stdarg.h>
@@ -12,12 +13,6 @@
 #include "game_mode_selector.h"
 #include "motor_control.h"
 #include "distance_sensor.h"
-
-#include "vesc/vescuart.h"
-
-extern uint32_t HAL_GetTick(void);
-extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart2;
 #define SM_Signal_Pin GPIO_PIN_13
 #define SM_Signal_GPIO_Port GPIOC
 

@@ -8,15 +8,12 @@
 #include "opponent_tracker.h"
 #include "robot_config.h"
 #include "usart1_log.h"
-#include "vesc/vescuart.h"
-#include "VL53L1X_api.h"
-#include "vl53l1_platform.h"
+
 
 #define EDGE_TEST ROBOT_EDGE_SENSOR_ENABLE
 #define OPPONENT_TEST 1
 
-extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart2;
+#include "main.h"
 
 #define EDGE_ESCAPE_DURATION_MS 600U
 #define EDGE_ESCAPE_BACKUP_MS 400U
@@ -42,13 +39,14 @@ static uint32_t opponent_right_last_seen_ms = 0;
 static uint32_t opponent_attack_last_seen_ms = 0;
 static uint32_t opponent_left_cooldown_until_ms = 0;
 static uint32_t opponent_right_cooldown_until_ms = 0;
-static uint32_t last_vesc_fault_poll_time = 0;
-static uint32_t vesc_fault_start_time = 0;
+
 static volatile uint8_t is_escaping = 0;
+#if EDGE_TEST
 static uint8_t edge_mode = 0;
+#endif
 static volatile uint8_t escape_timer_started = 0;
 static uint8_t run_once = 0;
-static uint8_t vesc_fault_latched = 0;
+
 static uint8_t stop_command_sent = 0; /* avoids re-sending stop/VESC-zero every tick while already stopped */
 static uint32_t search_sweep_phase_start_ms = 0U;
 static uint8_t search_sweep_bias_left = 1U;
@@ -64,8 +62,7 @@ static volatile uint32_t ir2_interrupt_time_ms = 0;
 static robot_state_t current_state;
 static volatile robot_edge_escape_mode_t current_escape_mode;
 
-VescUart_t vesc1;
-VescUart_t vesc2;
+
 
 static void opponent_debug_leds(const opponent_status_t *opponent)
 {
@@ -143,6 +140,7 @@ static void edge_escape_drive_turn(robot_edge_escape_mode_t escape_mode)
 	}
 }
 
+#if EDGE_TEST
 static void edge_escape_execute_blocking(void)
 {
 	const robot_edge_escape_mode_t escape_mode = current_escape_mode;
@@ -257,62 +255,9 @@ static void edge_process_analog_detection(const edge_status_t *edge)
 		edge_escape_begin(ROBOT_ESCAPE_FRONT);
 	}
 }
+#endif
 
-static void vesc_stop_all(void)
-{
-	VescUart_SetCurrent(&vesc1, 0.0f);
-	VescUart_SetCurrent(&vesc2, 0.0f);
-	VescUart_SetDuty(&vesc1, 0.0f);
-	VescUart_SetDuty(&vesc2, 0.0f);
-}
 
-static uint8_t vesc_is_overcurrent_fault(mc_fault_code fault)
-{
-	return (uint8_t)(fault == FAULT_CODE_ABS_OVER_CURRENT);
-}
-
-static uint8_t vesc_check_overcurrent_fault(void)
-{
-	const uint32_t current_time = HAL_GetTick();
-
-	if ((current_time - last_vesc_fault_poll_time) < VESC_FAULT_POLL_PERIOD_MS)
-	{
-		return 0U;
-	}
-
-	last_vesc_fault_poll_time = current_time;
-
-	const uint8_t vesc1_values_ok = VescUart_GetVescValues(&vesc1) ? 1U : 0U;
-	const uint8_t vesc2_values_ok = VescUart_GetVescValues(&vesc2) ? 1U : 0U;
-
-	if (vesc1_values_ok && vesc_is_overcurrent_fault(vesc1.data.error))
-	{
-		LOG_PRINT("VESC1 overcurrent fault detected\r\n");
-		return 1U;
-	}
-
-	if (vesc2_values_ok && vesc_is_overcurrent_fault(vesc2.data.error))
-	{
-		LOG_PRINT("VESC2 overcurrent fault detected\r\n");
-		return 1U;
-	}
-
-	return 0U;
-}
-
-static uint8_t vesc_overcurrent_faults_clear(void)
-{
-	const uint8_t vesc1_values_ok = VescUart_GetVescValues(&vesc1) ? 1U : 0U;
-	const uint8_t vesc2_values_ok = VescUart_GetVescValues(&vesc2) ? 1U : 0U;
-
-	if (!vesc1_values_ok || !vesc2_values_ok)
-	{
-		return 0U;
-	}
-
-	return (uint8_t)(!vesc_is_overcurrent_fault(vesc1.data.error) &&
-					 !vesc_is_overcurrent_fault(vesc2.data.error));
-}
 
 void state_machine_init(void)
 {
@@ -346,7 +291,9 @@ void state_machine_update(void)
 {
 	const robot_state_t previous_state = current_state;
 	const opponent_status_t opponent = opponent_tracker_get_status();
+#if EDGE_TEST
 	const edge_status_t edge = edge_detector_get_status();
+#endif
 	const uint32_t now_ms = HAL_GetTick();
 	uint8_t front_seen_or_latched = opponent.front;
 	uint8_t attack_requested = 0U;
@@ -650,7 +597,7 @@ void state_machine_update(void)
 		 * previously firing 4 blocking VESC UART transmits every loop. */
 		if (!stop_command_sent)
 		{
-			vesc_stop_all();
+
 			motor_control_stop();
 			stop_command_sent = 1U;
 		}

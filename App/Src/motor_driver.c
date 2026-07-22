@@ -3,16 +3,16 @@
 #include "main.h"
 #include "robot_config.h"
 
-extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim1;
 
-#define LEFT_MOTOR_PWM_TIMER      (&htim2)
-#define LEFT_MOTOR_PWM_CHANNEL    TIM_CHANNEL_1
+#define LEFT_MOTOR_PWM_TIMER      (&htim4)
+#define LEFT_MOTOR_PWM_CHANNEL    TIM_CHANNEL_4
 #define LEFT_MOTOR_DIR_PORT       LEFT_DIR_GPIO_Port
 #define LEFT_MOTOR_DIR_PIN        LEFT_DIR_Pin
 
-#define RIGHT_MOTOR_PWM_TIMER     (&htim3)
-#define RIGHT_MOTOR_PWM_CHANNEL   TIM_CHANNEL_2
+#define RIGHT_MOTOR_PWM_TIMER     (&htim1)
+#define RIGHT_MOTOR_PWM_CHANNEL   TIM_CHANNEL_3
 #define RIGHT_MOTOR_DIR_PORT      RIGHT_DIR_GPIO_Port
 #define RIGHT_MOTOR_DIR_PIN       RIGHT_DIR_Pin
 

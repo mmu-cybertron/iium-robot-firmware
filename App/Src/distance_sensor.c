@@ -7,6 +7,10 @@ extern ADC_HandleTypeDef hadc1;
 
 opponent_status_t last_status;
 
+// Global variables for STM32CubeIDE Live Expressions debugging
+volatile uint16_t debug_left_adc = 0;
+volatile uint16_t debug_front_adc = 0;
+volatile uint16_t debug_right_adc = 0;
 // Define ADC ranges for Sharp IR
 // A typical Sharp IR outputs higher voltage at closer distances.
 // The user requested a range rather than a single threshold.
@@ -18,7 +22,7 @@ static uint16_t read_adc_channel(uint32_t channel)
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.Channel = channel;
     sConfig.Rank = 1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
 
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
@@ -64,13 +68,18 @@ void distance_sensor_init(void)
 opponent_status_t distance_sensor_read_opponent(void)
 {
     // Read the three ADC channels
-    // PA3 -> Left -> ADC1_IN3
-    // PB0 -> Front -> ADC1_IN8
-    // PB1 -> Right -> ADC1_IN9
+    // PA7 -> Left -> ADC1_IN7
+    // PA2 -> Front -> ADC1_IN2
+    // PA3 -> Right -> ADC1_IN3
 
-    uint16_t left_adc = read_adc_channel(ADC_CHANNEL_3);
-    uint16_t front_adc = read_adc_channel(ADC_CHANNEL_8);
-    uint16_t right_adc = read_adc_channel(ADC_CHANNEL_9);
+    uint16_t left_adc = read_adc_channel(ADC_CHANNEL_7);
+    uint16_t front_adc = read_adc_channel(ADC_CHANNEL_2);
+    uint16_t right_adc = read_adc_channel(ADC_CHANNEL_3);
+
+    // Save to globals so they can be viewed in Live Expressions
+    debug_left_adc = left_adc;
+    debug_front_adc = front_adc;
+    debug_right_adc = right_adc;
 
     last_status.left = is_opponent_detected(left_adc);
     last_status.front = is_opponent_detected(front_adc);

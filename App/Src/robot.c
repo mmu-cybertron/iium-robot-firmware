@@ -8,7 +8,7 @@
 #include "motor_control.h"
 #include "state_machine.h"
 #include "usart1_log.h"
-#include "vesc/vescuart.h"
+
 
 #define VESC_SETUP 0
 #define ROBOT_EDGE_IR_DEBUG 0
@@ -118,4 +118,8 @@ void robot_update(void)
 void robot_background(void)
 {
     state_machine_background();
+#if !ROBOT_EDGE_IR_DEBUG
+    // Added for Live Expressions debugging so ADC updates while waiting for Start signal
+    opponent_tracker_update();
+#endif
 }

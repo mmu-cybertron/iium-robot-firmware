@@ -61,6 +61,12 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define SM_Signal_Pin GPIO_PIN_13
 #define SM_Signal_GPIO_Port GPIOC
+#define FRONT_IR_Pin GPIO_PIN_2
+#define FRONT_IR_GPIO_Port GPIOA
+#define RIGHT_IR_Pin GPIO_PIN_3
+#define RIGHT_IR_GPIO_Port GPIOA
+#define LEFT_IR_Pin GPIO_PIN_7
+#define LEFT_IR_GPIO_Port GPIOA
 #define IR2_DO_Pin GPIO_PIN_2
 #define IR2_DO_GPIO_Port GPIOB
 #define IR2_DO_EXTI_IRQn EXTI2_IRQn
@@ -77,6 +83,8 @@ void Error_Handler(void);
 #define LED_D7_GPIO_Port GPIOB
 #define LED_D8_Pin GPIO_PIN_8
 #define LED_D8_GPIO_Port GPIOA
+#define PWM_RIGHT_Pin GPIO_PIN_10
+#define PWM_RIGHT_GPIO_Port GPIOA
 #define XSHUT_1_Pin GPIO_PIN_3
 #define XSHUT_1_GPIO_Port GPIOB
 #define XSHUT_2_Pin GPIO_PIN_4
@@ -87,6 +95,8 @@ void Error_Handler(void);
 #define XSHUT_4_GPIO_Port GPIOB
 #define XSHUT_5_Pin GPIO_PIN_7
 #define XSHUT_5_GPIO_Port GPIOB
+#define PWM_LEFT_Pin GPIO_PIN_9
+#define PWM_LEFT_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
