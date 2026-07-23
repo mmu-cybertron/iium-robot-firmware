@@ -11,38 +11,40 @@ opponent_status_t last_status;
 volatile uint16_t debug_left_adc = 0;
 volatile uint16_t debug_front_adc = 0;
 volatile uint16_t debug_right_adc = 0;
+    
 // Define ADC ranges for Sharp IR
 // A typical Sharp IR outputs higher voltage at closer distances.
-// The user requested a range rather than a single threshold.
-#define SHARP_IR_MIN_ADC_THRESHOLD 1500  // Minimum ADC value to be considered an opponent
-#define SHARP_IR_MAX_ADC_THRESHOLD 4000  // Maximum ADC value (to filter out noise/glitches)
+#define SHARP_IR_SIDE_MIN_ADC_THRESHOLD 200  // Minimum ADC value for Left/Right sensors
+#define SHARP_IR_SIDE_MAX_ADC_THRESHOLD 4095  // Maximum ADC value for Left/Right sensors
+
+#define SHARP_IR_FRONT_MIN_ADC_THRESHOLD 500 // Minimum ADC value for Front sensor
+#define SHARP_IR_FRONT_MAX_ADC_THRESHOLD 4095 // Maximum ADC value for Front sensor
 
 static uint16_t read_adc_channel(uint32_t channel)
 {
-    ADC_ChannelConfTypeDef sConfig = {0};
-    sConfig.Channel = channel;
-    sConfig.Rank = 1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
+    const uint32_t start_ms = HAL_GetTick();
+    
+    // Direct register access matching line_sensor.c to prevent HAL lockups
+    ADC1->SQR3 = channel;
+    
+    // Tiny delay to let the analog multiplexer settle physically
+    for (volatile int i = 0; i < 50; i++) { __NOP(); }
+    
+    ADC1->SR = 0U;
+    ADC1->CR2 |= ADC_CR2_SWSTART;
 
-    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-    {
-        return 0;
+    while ((ADC1->SR & ADC_SR_EOC) == 0U) {
+        if ((HAL_GetTick() - start_ms) > 2U) {
+            return 0U; // Timeout
+        }
     }
 
-    HAL_ADC_Start(&hadc1);
-    if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
-    {
-        uint16_t val = HAL_ADC_GetValue(&hadc1);
-        HAL_ADC_Stop(&hadc1);
-        return val;
-    }
-    HAL_ADC_Stop(&hadc1);
-    return 0;
+    return (uint16_t)(ADC1->DR & 0xFFF);
 }
 
-static uint8_t is_opponent_detected(uint16_t adc_val)
+static uint8_t is_opponent_detected(uint16_t adc_val, uint16_t min_thresh, uint16_t max_thresh)
 {
-    if (adc_val >= SHARP_IR_MIN_ADC_THRESHOLD && adc_val <= SHARP_IR_MAX_ADC_THRESHOLD) {
+    if (adc_val >= min_thresh && adc_val <= max_thresh) {
         return 1;
     }
     return 0;
@@ -51,6 +53,13 @@ static uint8_t is_opponent_detected(uint16_t adc_val)
 void distance_sensor_init(void)
 {
     LOG_PRINT("\r\n--- Initializing Sharp IR Distance Sensors ---\r\n");
+
+    // Enable ADC clock and configure sampling times for channels 2, 3, 7 to prevent HAL conflicts
+    __HAL_RCC_ADC1_CLK_ENABLE();
+    ADC1->CR2 |= ADC_CR2_ADON; // Ensure ADC is powered on
+    ADC1->SMPR2 |= ADC_SMPR2_SMP2_1 | ADC_SMPR2_SMP2_0 |  // 112 cycles for CH2
+                   ADC_SMPR2_SMP3_1 | ADC_SMPR2_SMP3_0 |  // 112 cycles for CH3
+                   ADC_SMPR2_SMP7_1 | ADC_SMPR2_SMP7_0;   // 112 cycles for CH7
 
     last_status.front = 0U;
     last_status.left = 0U;
@@ -71,7 +80,6 @@ opponent_status_t distance_sensor_read_opponent(void)
     // PA7 -> Left -> ADC1_IN7
     // PA2 -> Front -> ADC1_IN2
     // PA3 -> Right -> ADC1_IN3
-
     uint16_t left_adc = read_adc_channel(ADC_CHANNEL_7);
     uint16_t front_adc = read_adc_channel(ADC_CHANNEL_2);
     uint16_t right_adc = read_adc_channel(ADC_CHANNEL_3);
@@ -81,9 +89,9 @@ opponent_status_t distance_sensor_read_opponent(void)
     debug_front_adc = front_adc;
     debug_right_adc = right_adc;
 
-    last_status.left = is_opponent_detected(left_adc);
-    last_status.front = is_opponent_detected(front_adc);
-    last_status.right = is_opponent_detected(right_adc);
+    last_status.left = is_opponent_detected(left_adc, SHARP_IR_SIDE_MIN_ADC_THRESHOLD, SHARP_IR_SIDE_MAX_ADC_THRESHOLD);
+    last_status.front = is_opponent_detected(front_adc, SHARP_IR_FRONT_MIN_ADC_THRESHOLD, SHARP_IR_FRONT_MAX_ADC_THRESHOLD);
+    last_status.right = is_opponent_detected(right_adc, SHARP_IR_SIDE_MIN_ADC_THRESHOLD, SHARP_IR_SIDE_MAX_ADC_THRESHOLD);
     
     // Rear sensors not implemented with Sharp IRs in this setup
     last_status.rear_right = 0U;

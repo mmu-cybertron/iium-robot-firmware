@@ -1,5 +1,5 @@
-#include "state_machine.h"
 
+#include "state_machine.h"
 #include "edge_detector.h"
 #include "distance_sensor.h"
 #include "failsafe.h"
@@ -42,7 +42,7 @@ static uint32_t opponent_right_cooldown_until_ms = 0;
 
 static volatile uint8_t is_escaping = 0;
 #if EDGE_TEST
-static uint8_t edge_mode = 0;
+
 #endif
 static volatile uint8_t escape_timer_started = 0;
 static uint8_t run_once = 0;
@@ -82,6 +82,7 @@ static void opponent_debug_leds(const opponent_status_t *opponent)
 #endif
 }
 
+#if EDGE_TEST
 static void edge_debug_show_accepted(void)
 {
 	HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_SET);
@@ -140,7 +141,6 @@ static void edge_escape_drive_turn(robot_edge_escape_mode_t escape_mode)
 	}
 }
 
-#if EDGE_TEST
 static void edge_escape_execute_blocking(void)
 {
 	const robot_edge_escape_mode_t escape_mode = current_escape_mode;
@@ -297,45 +297,34 @@ void state_machine_update(void)
 	const uint32_t now_ms = HAL_GetTick();
 	uint8_t front_seen_or_latched = opponent.front;
 	uint8_t attack_requested = 0U;
-	uint8_t attack_held = 0U;
 
-	if (opponent.front != 0U)
+
+	if (opponent.front == 1)
 	{
 		opponent_front_last_seen_ms = now_ms;
 	}
-	else if ((opponent_front_last_seen_ms != 0U) &&
-			 ((now_ms - opponent_front_last_seen_ms) <= OPPONENT_FRONT_LATCH_MS))
-	{
-		front_seen_or_latched = 1U;
-	}
-	if (opponent.left != 0U)
+//	else if ((opponent_front_last_seen_ms != 0U) &&
+//			 ((now_ms - opponent_front_last_seen_ms) <= OPPONENT_FRONT_LATCH_MS))
+//	{
+//		front_seen_or_latched = 1U;
+//	}
+	if (opponent.left == 1)
 	{
 		opponent_left_last_seen_ms = now_ms;
 	}
-	if (opponent.right != 0U)
+	if (opponent.right == 1)
 	{
 		opponent_right_last_seen_ms = now_ms;
 	}
 
-	attack_requested = (uint8_t)(front_seen_or_latched ||
-								 ((opponent.left != 0U) && (opponent.right != 0U)) ||
-								 ((opponent.left != 0U) &&
-								  (opponent_right_last_seen_ms != 0U) &&
-								  ((now_ms - opponent_right_last_seen_ms) <= OPPONENT_SIDE_CROSS_ATTACK_WINDOW_MS)) ||
-								 ((opponent.right != 0U) &&
-								  (opponent_left_last_seen_ms != 0U) &&
-								  ((now_ms - opponent_left_last_seen_ms) <= OPPONENT_SIDE_CROSS_ATTACK_WINDOW_MS)));
+	// Only attack if the front sensor detects the opponent directly
+	attack_requested = front_seen_or_latched;
 
 	if (attack_requested != 0U)
 	{
 		opponent_attack_last_seen_ms = now_ms;
 	}
-	else if ((current_state == ROBOT_STATE_ATTACK) &&
-			 (opponent_attack_last_seen_ms != 0U) &&
-			 ((now_ms - opponent_attack_last_seen_ms) <= OPPONENT_ATTACK_HOLD_MS))
-	{
-		attack_held = 1U;
-	}
+	// Removed attack_held timer based on user request to instantly exit attack when sensors are 0
 
 	// TOF_debug();
 
@@ -380,7 +369,7 @@ void state_machine_update(void)
 	}
 #endif
 #if OPPONENT_TEST
-	else if ((attack_requested != 0U) || (attack_held != 0U))
+	else if (attack_requested != 0U)
 	{
 		current_state = ROBOT_STATE_ATTACK;
 		is_attack = 1;
@@ -393,8 +382,8 @@ void state_machine_update(void)
 		if (tracking_left || tracking_right)
 		{
 			const uint8_t still_same_side =
-				(tracking_left && (opponent.left != 0U)) ||
-				(tracking_right && (opponent.right != 0U));
+				(tracking_left && (opponent.left == 1)) ||
+				(tracking_right && (opponent.right == 1));
 
 			if (still_same_side)
 			{
@@ -403,7 +392,7 @@ void state_machine_update(void)
 				opponent_track_start_ms = now_ms;
 			}
 			else if (tracking_left &&
-					 (opponent.right != 0U) &&
+					 (opponent.right == 1) &&
 					 ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
 			{
 				current_state = ROBOT_STATE_TRACK_RIGHT;
@@ -411,7 +400,7 @@ void state_machine_update(void)
 				is_attack = 0;
 			}
 			else if (tracking_right &&
-					 (opponent.left != 0U) &&
+					 (opponent.left == 1) &&
 					 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
 			{
 				current_state = ROBOT_STATE_TRACK_LEFT;
@@ -432,21 +421,24 @@ void state_machine_update(void)
 				is_attack = 0;
 			}
 		}
-		else if ((opponent.left != 0U) &&
+		else if ((opponent.left == 1) &&
 				 ((int32_t)(now_ms - opponent_left_cooldown_until_ms) >= 0))
 		{
 			current_state = ROBOT_STATE_TRACK_LEFT;
 			opponent_track_start_ms = now_ms;
+			is_attack = 0;
 		}
-		else if ((opponent.right != 0U) &&
+		else if ((opponent.right == 1) &&
 				 ((int32_t)(now_ms - opponent_right_cooldown_until_ms) >= 0))
 		{
 			current_state = ROBOT_STATE_TRACK_RIGHT;
 			opponent_track_start_ms = now_ms;
+			is_attack = 0;
 		}
 		else
 		{
 			current_state = ROBOT_STATE_SEARCH;
+			is_attack = 0;
 		}
 	}
 #else
@@ -470,14 +462,7 @@ void state_machine_update(void)
 	case ROBOT_STATE_ATTACK:
 	{
 		stop_command_sent = 0U;
-		// motor_control_set_command(motion_forward(ROBOT_ATTACK_PWM));
-		const int front_mm = front_mm_return();
-		if (front_mm > 0 && front_mm <= 1000)
-		{
-			motor_control_set_pwm(1750, 1750);
-		}
-
-		// LOG_PRINT("Attacking\n");
+		motor_control_set_pwm(1750, 1750);
 		opponent_debug_leds(&opponent);
 		break;
 	}

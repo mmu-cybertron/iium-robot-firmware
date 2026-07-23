@@ -100,20 +100,17 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     /**ADC1 GPIO Configuration
     PA2     ------> ADC1_IN2
     PA3     ------> ADC1_IN3
-    PA4     ------> ADC1_IN4
     PA5     ------> ADC1_IN5
-    PA6     ------> ADC1_IN6
     PA7     ------> ADC1_IN7
     PB0     ------> ADC1_IN8
     PB1     ------> ADC1_IN9
     */
-    GPIO_InitStruct.Pin = FRONT_IR_Pin|RIGHT_IR_Pin|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_6|LEFT_IR_Pin;
+    GPIO_InitStruct.Pin = FRONT_IR_Pin|RIGHT_IR_Pin|IR_BR_Pin|IR_BL_Pin|LEFT_IR_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+    GPIO_InitStruct.Pin = IR_FR_Pin|IR_FL_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -145,17 +142,14 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     /**ADC1 GPIO Configuration
     PA2     ------> ADC1_IN2
     PA3     ------> ADC1_IN3
-    PA4     ------> ADC1_IN4
     PA5     ------> ADC1_IN5
-    PA6     ------> ADC1_IN6
     PA7     ------> ADC1_IN7
     PB0     ------> ADC1_IN8
     PB1     ------> ADC1_IN9
     */
-    HAL_GPIO_DeInit(GPIOA, FRONT_IR_Pin|RIGHT_IR_Pin|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_6|LEFT_IR_Pin);
+    HAL_GPIO_DeInit(GPIOA, FRONT_IR_Pin|RIGHT_IR_Pin|IR_BR_Pin|LEFT_IR_Pin);
 
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0|GPIO_PIN_1);
+    HAL_GPIO_DeInit(GPIOB, IR_FR_Pin|IR_FL_Pin);
 
     /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
@@ -239,9 +233,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**TIM2 GPIO Configuration
-    PA0-WKUP     ------> TIM2_CH1
+    PA15     ------> TIM2_CH1
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Pin = GPIO_PIN_15;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

@@ -59,26 +59,22 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define SM_Signal_Pin GPIO_PIN_13
-#define SM_Signal_GPIO_Port GPIOC
 #define FRONT_IR_Pin GPIO_PIN_2
 #define FRONT_IR_GPIO_Port GPIOA
 #define RIGHT_IR_Pin GPIO_PIN_3
 #define RIGHT_IR_GPIO_Port GPIOA
+#define IR_BR_Pin GPIO_PIN_5
+#define IR_BR_GPIO_Port GPIOA
 #define LEFT_IR_Pin GPIO_PIN_7
 #define LEFT_IR_GPIO_Port GPIOA
-#define IR2_DO_Pin GPIO_PIN_2
-#define IR2_DO_GPIO_Port GPIOB
-#define IR2_DO_EXTI_IRQn EXTI2_IRQn
-#define IR1_DO_Pin GPIO_PIN_10
-#define IR1_DO_GPIO_Port GPIOB
-#define IR1_DO_EXTI_IRQn EXTI15_10_IRQn
+#define IR_FR_Pin GPIO_PIN_0
+#define IR_FR_GPIO_Port GPIOB
+#define IR_FL_Pin GPIO_PIN_1
+#define IR_FL_GPIO_Port GPIOB
 #define Mode_Button_Pin GPIO_PIN_12
 #define Mode_Button_GPIO_Port GPIOB
 #define Confirm_Button_Pin GPIO_PIN_13
 #define Confirm_Button_GPIO_Port GPIOB
-#define LED_D6_Pin GPIO_PIN_14
-#define LED_D6_GPIO_Port GPIOB
 #define LED_D7_Pin GPIO_PIN_15
 #define LED_D7_GPIO_Port GPIOB
 #define LED_D8_Pin GPIO_PIN_8
@@ -93,15 +89,30 @@ void Error_Handler(void);
 #define XSHUT_3_GPIO_Port GPIOB
 #define XSHUT_4_Pin GPIO_PIN_6
 #define XSHUT_4_GPIO_Port GPIOB
-#define XSHUT_5_Pin GPIO_PIN_7
-#define XSHUT_5_GPIO_Port GPIOB
 #define PWM_LEFT_Pin GPIO_PIN_9
 #define PWM_LEFT_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
-   /* GPIO Pin definitions for buttons */
+/* 
+ * Fallbacks for pins removed from the .ioc file.
+ * We map LED_D6 to LED_D7 so the code still compiles safely,
+ * and we restore SM_Signal to its original PC13 just in case it was accidentally removed.
+ */
+#ifndef LED_D6_Pin
+#define LED_D6_Pin LED_D7_Pin
+#define LED_D6_GPIO_Port LED_D7_GPIO_Port
+#endif
 
+#ifndef SM_Signal_Pin
+#define SM_Signal_Pin GPIO_PIN_13
+#define SM_Signal_GPIO_Port GPIOC
+#endif
+
+#ifndef IR_BL_Pin
+#define IR_BL_Pin GPIO_PIN_6
+#define IR_BL_GPIO_Port GPIOA
+#endif
 
 /* USER CODE END Private defines */
 
