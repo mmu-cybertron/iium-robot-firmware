@@ -3,6 +3,8 @@
 #include "usart1_log.h"
 #include "main.h"
 
+#define ROBOT_TYPE 0 //1 is black fully while 0 is black with yellow inside
+
 extern ADC_HandleTypeDef hadc1;
 
 opponent_status_t last_status;
@@ -14,11 +16,21 @@ volatile uint16_t debug_right_adc = 0;
     
 // Define ADC ranges for Sharp IR
 // A typical Sharp IR outputs higher voltage at closer distances.
+
+#if ROBOT_TYPE
 #define SHARP_IR_SIDE_MIN_ADC_THRESHOLD 200  // Minimum ADC value for Left/Right sensors
 #define SHARP_IR_SIDE_MAX_ADC_THRESHOLD 4095  // Maximum ADC value for Left/Right sensors
 
 #define SHARP_IR_FRONT_MIN_ADC_THRESHOLD 500 // Minimum ADC value for Front sensor
 #define SHARP_IR_FRONT_MAX_ADC_THRESHOLD 4095 // Maximum ADC value for Front sensor
+#else
+#define SHARP_IR_SIDE_MIN_ADC_THRESHOLD 400  // Minimum ADC value for Left/Right sensors
+#define SHARP_IR_SIDE_MAX_ADC_THRESHOLD 4095  // Maximum ADC value for Left/Right sensors
+
+#define SHARP_IR_FRONT_MIN_ADC_THRESHOLD 500 // Minimum ADC value for Front sensor
+#define SHARP_IR_FRONT_MAX_ADC_THRESHOLD 4095 // Maximum ADC value for Front sensor
+#endif
+
 
 static uint16_t read_adc_channel(uint32_t channel)
 {

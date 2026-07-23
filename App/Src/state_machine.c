@@ -470,96 +470,98 @@ void state_machine_update(void)
 	case ROBOT_STATE_TRACK_LEFT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1500, 1300);
+		motor_control_set_pwm(1300, 1500);
 		break;
 
 	case ROBOT_STATE_TRACK_RIGHT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1300, 1500);
+		motor_control_set_pwm(1500, 1300);
 		break;
 
 	case ROBOT_STATE_SEARCH:
 	{
-		stop_command_sent = 0U;
-		opponent_debug_leds(&opponent);
+//		stop_command_sent = 0U;
+//		opponent_debug_leds(&opponent);
+//
+//		if (previous_state != ROBOT_STATE_SEARCH && search_initialized == 0U)
+//		{
+//			/* Fresh entry into SEARCH — always restart the sweep at "left". */
+//			search_sweep_going_left = 1U;
+//			search_sweep_bias_left = 1U;
+//			search_phase_step = 0U;
+//			search_sweep_phase_start_ms = now_ms;
+//			search_initialized = 1U;
+//		}
+//
+//		const uint32_t sweep_now_ms = HAL_GetTick();
+//		const uint32_t phase_elapsed_ms = sweep_now_ms - search_sweep_phase_start_ms;
+//
+//		/* Which side gets the shorter flick vs the longer sweep swaps every
+//		 * full left-right pair, so the net rotation cancels out over two
+//		 * cycles instead of drifting continuously in one direction. */
+//		const uint32_t left_phase_ms = search_sweep_bias_left ? SEARCH_SWEEP_LEFT_MS : SEARCH_SWEEP_RIGHT_MS;
+//		const uint32_t right_phase_ms = search_sweep_bias_left ? SEARCH_SWEEP_RIGHT_MS : SEARCH_SWEEP_LEFT_MS;
+//		uint32_t phase_duration_ms = search_sweep_going_left ? left_phase_ms : right_phase_ms;
+//
+//		if (search_phase_step == 0U || search_phase_step == 4U)
+//		{
+//			phase_duration_ms = SEARCH_SWEEP_LEFT_MS;
+//		}
+//		else if (search_phase_step == 1U || search_phase_step == 3U || search_phase_step == 5U)
+//		{
+//			phase_duration_ms = SEARCH_SWEEP_PAUSE_MS;
+//		}
+//		else if (search_phase_step == 2U)
+//		{
+//			phase_duration_ms = SEARCH_SWEEP_RIGHT_MS;
+//		}
+//
+//		if (search_phase_step < 6U)
+//		{
+//			if (phase_elapsed_ms >= phase_duration_ms)
+//			{
+//				//				if (search_sweep_going_left == 0U)
+//				//				{
+//				//					/* Just finished a right phase, about to go left again —
+//				//					 * a full pair completed, so flip the bias for next pair. */
+//				//					search_sweep_bias_left = !search_sweep_bias_left;
+//				//				}
+//				search_sweep_going_left = !search_sweep_going_left;
+//				search_sweep_phase_start_ms = sweep_now_ms;
+//				search_phase_step++;
+//			}
+//		}
+//
+//		switch (search_phase_step)
+//		{
+//		case 0U:
+//			motor_control_set_pwm(1800, 1200);
+//			break;
+//		case 1U:
+//			motor_control_set_pwm(1500, 1500);
+//			break;
+//		case 2U:
+//			motor_control_set_pwm(1200, 1800);
+//			break;
+//		case 3U:
+//			motor_control_set_pwm(1500, 1500);
+//			break;
+//		case 4U:
+//			motor_control_set_pwm(1800, 1200);
+//			break;
+//		case 5U:
+//			motor_control_set_pwm(1500, 1500);
+//			break;
+//		case 6U:
+//			motor_control_set_pwm(1500, 1500);//prev  yy
+//			break;
+//		default:
+//			motor_control_set_pwm(1500, 1500);
+//			break;
+//		}
 
-		if (previous_state != ROBOT_STATE_SEARCH && search_initialized == 0U)
-		{
-			/* Fresh entry into SEARCH — always restart the sweep at "left". */
-			search_sweep_going_left = 1U;
-			search_sweep_bias_left = 1U;
-			search_phase_step = 0U;
-			search_sweep_phase_start_ms = now_ms;
-			search_initialized = 1U;
-		}
-
-		const uint32_t sweep_now_ms = HAL_GetTick();
-		const uint32_t phase_elapsed_ms = sweep_now_ms - search_sweep_phase_start_ms;
-
-		/* Which side gets the shorter flick vs the longer sweep swaps every
-		 * full left-right pair, so the net rotation cancels out over two
-		 * cycles instead of drifting continuously in one direction. */
-		const uint32_t left_phase_ms = search_sweep_bias_left ? SEARCH_SWEEP_LEFT_MS : SEARCH_SWEEP_RIGHT_MS;
-		const uint32_t right_phase_ms = search_sweep_bias_left ? SEARCH_SWEEP_RIGHT_MS : SEARCH_SWEEP_LEFT_MS;
-		uint32_t phase_duration_ms = search_sweep_going_left ? left_phase_ms : right_phase_ms;
-
-		if (search_phase_step == 0U || search_phase_step == 4U)
-		{
-			phase_duration_ms = SEARCH_SWEEP_LEFT_MS;
-		}
-		else if (search_phase_step == 1U || search_phase_step == 3U || search_phase_step == 5U)
-		{
-			phase_duration_ms = SEARCH_SWEEP_PAUSE_MS;
-		}
-		else if (search_phase_step == 2U)
-		{
-			phase_duration_ms = SEARCH_SWEEP_RIGHT_MS;
-		}
-
-		if (search_phase_step < 6U)
-		{
-			if (phase_elapsed_ms >= phase_duration_ms)
-			{
-				//				if (search_sweep_going_left == 0U)
-				//				{
-				//					/* Just finished a right phase, about to go left again —
-				//					 * a full pair completed, so flip the bias for next pair. */
-				//					search_sweep_bias_left = !search_sweep_bias_left;
-				//				}
-				search_sweep_going_left = !search_sweep_going_left;
-				search_sweep_phase_start_ms = sweep_now_ms;
-				search_phase_step++;
-			}
-		}
-
-		switch (search_phase_step)
-		{
-		case 0U:
-			motor_control_set_pwm(1800, 1200);
-			break;
-		case 1U:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		case 2U:
-			motor_control_set_pwm(1200, 1800);
-			break;
-		case 3U:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		case 4U:
-			motor_control_set_pwm(1800, 1200);
-			break;
-		case 5U:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		case 6U:
-			motor_control_set_pwm(1500, 1500);//prev  yy
-			break;
-		default:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		}
+		motor_control_set_pwm(1500, 1500);
 
 		motor_control_update();
 		break;

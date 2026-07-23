@@ -1,12 +1,23 @@
 #include "line_sensor.h"
 #include "main.h"
 
+#define ROBOT_TYPE 0 //1 is black fully while 0 is black with yellow inside
+
+#if ROBOT_TYPE
 #define IR_ANALOG_EDGE_THRESHOLD 450U
 #define IR_ANALOG_TIMEOUT_MS 1U
-#define IR_FL_ADC_CHANNEL 9U
-#define IR_FR_ADC_CHANNEL 8U
+#define IR_FL_ADC_CHANNEL 8U
+#define IR_FR_ADC_CHANNEL 9U
 #define IR_BL_ADC_CHANNEL 6U
 #define IR_BR_ADC_CHANNEL 5U
+#else
+#define IR_ANALOG_EDGE_THRESHOLD 1000U
+#define IR_ANALOG_TIMEOUT_MS 1U
+#define IR_FL_ADC_CHANNEL 8U
+#define IR_FR_ADC_CHANNEL 9U
+#define IR_BL_ADC_CHANNEL 6U
+#define IR_BR_ADC_CHANNEL 5U
+#endif
 
 static uint8_t adc_initialized;
 
