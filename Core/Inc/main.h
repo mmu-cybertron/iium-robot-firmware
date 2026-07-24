@@ -65,6 +65,8 @@ void Error_Handler(void);
 #define RIGHT_IR_GPIO_Port GPIOA
 #define IR_BR_Pin GPIO_PIN_5
 #define IR_BR_GPIO_Port GPIOA
+#define IR_BL_Pin GPIO_PIN_6
+#define IR_BL_GPIO_Port GPIOA
 #define LEFT_IR_Pin GPIO_PIN_7
 #define LEFT_IR_GPIO_Port GPIOA
 #define IR_FR_Pin GPIO_PIN_0
@@ -75,6 +77,8 @@ void Error_Handler(void);
 #define Mode_Button_GPIO_Port GPIOB
 #define Confirm_Button_Pin GPIO_PIN_13
 #define Confirm_Button_GPIO_Port GPIOB
+#define LED_D6_Pin GPIO_PIN_14
+#define LED_D6_GPIO_Port GPIOB
 #define LED_D7_Pin GPIO_PIN_15
 #define LED_D7_GPIO_Port GPIOB
 #define LED_D8_Pin GPIO_PIN_8

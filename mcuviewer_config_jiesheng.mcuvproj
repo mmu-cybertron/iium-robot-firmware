@@ -57,11 +57,11 @@ should_log = false
 log_directory = 
 
 [var0]
-name = front_failure_count
-tracked_name = front_failure_count
-address = 536871128
-type = 5
-color = 3598249784
+name = debug_edge_left_adc
+tracked_name = debug_edge_left_adc
+address = 536871022
+type = 3
+color = 3898459627
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -74,11 +74,11 @@ write_limit_min = -1.000000
 write_limit_max = 1.000000
 
 [var1]
-name = front_mm
-tracked_name = front_mm
-address = 536870914
+name = debug_edge_rear_left_adc
+tracked_name = debug_edge_rear_left_adc
+address = 536871026
 type = 3
-color = 3425991265
+color = 4222221268
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -91,11 +91,11 @@ write_limit_min = -1.000000
 write_limit_max = 1.000000
 
 [var2]
-name = last_status.distance_mm
-tracked_name = last_status.distance_mm
-address = 536871062
+name = debug_edge_rear_right_adc
+tracked_name = debug_edge_rear_right_adc
+address = 536871028
 type = 3
-color = 2285459367
+color = 1254529321
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -108,11 +108,11 @@ write_limit_min = -1.000000
 write_limit_max = 1.000000
 
 [var3]
-name = last_status.front
-tracked_name = last_status.front
-address = 536871056
-type = 1
-color = 1328959129
+name = debug_edge_right_adc
+tracked_name = debug_edge_right_adc
+address = 536871024
+type = 3
+color = 3934687739
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -125,11 +125,11 @@ write_limit_min = -1.000000
 write_limit_max = 1.000000
 
 [var4]
-name = last_status.left
-tracked_name = last_status.left
-address = 536871057
-type = 1
-color = 661811444
+name = debug_front_adc
+tracked_name = debug_front_adc
+address = 536870998
+type = 3
+color = 3006646774
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -142,11 +142,11 @@ write_limit_min = -1.000000
 write_limit_max = 1.000000
 
 [var5]
-name = last_status.right
-tracked_name = last_status.right
-address = 536871058
-type = 1
-color = 4074147377
+name = debug_left_adc
+tracked_name = debug_left_adc
+address = 536870996
+type = 3
+color = 2821452933
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -159,62 +159,11 @@ write_limit_min = -1.000000
 write_limit_max = 1.000000
 
 [var6]
-name = left_failure_count
-tracked_name = left_failure_count
-address = 536871124
-type = 5
-color = 3854934949
-should_update_from_elf = true
-shift = 0
-mask = 4294967295
-high_level_type = 0
-value_to_write = 0.000000
-secondary_value_to_write = 0.000000
-do_not_interpret_as_enum = false
-write_limits_enabled = false
-write_limit_min = -1.000000
-write_limit_max = 1.000000
-
-[var7]
-name = left_mm
-tracked_name = left_mm
-address = 536870912
+name = debug_right_adc
+tracked_name = debug_right_adc
+address = 536871000
 type = 3
-color = 229883840
-should_update_from_elf = true
-shift = 0
-mask = 4294967295
-high_level_type = 0
-value_to_write = 0.000000
-secondary_value_to_write = 0.000000
-do_not_interpret_as_enum = false
-write_limits_enabled = false
-write_limit_min = -1.000000
-write_limit_max = 1.000000
-
-[var8]
-name = right_failure_count
-tracked_name = right_failure_count
-address = 536871132
-type = 5
-color = 75268510
-should_update_from_elf = true
-shift = 0
-mask = 4294967295
-high_level_type = 0
-value_to_write = 0.000000
-secondary_value_to_write = 0.000000
-do_not_interpret_as_enum = false
-write_limits_enabled = false
-write_limit_min = -1.000000
-write_limit_max = 1.000000
-
-[var9]
-name = right_mm
-tracked_name = right_mm
-address = 536870916
-type = 3
-color = 3764539461
+color = 178262211
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -237,17 +186,22 @@ visibility = true
 secondary_write_enabled = false
 
 [group0-plot0-series0]
-name = last_status.front
+name = debug_edge_left_adc
 visibility = true
 format = DEC
 
 [group0-plot0-series1]
-name = last_status.left
+name = debug_edge_rear_left_adc
 visibility = true
 format = DEC
 
 [group0-plot0-series2]
-name = last_status.right
+name = debug_edge_rear_right_adc
+visibility = true
+format = DEC
+
+[group0-plot0-series3]
+name = debug_edge_right_adc
 visibility = true
 format = DEC
 
@@ -258,38 +212,17 @@ visibility = true
 secondary_write_enabled = false
 
 [group0-plot1-series0]
-name = front_mm
+name = debug_front_adc
 visibility = true
 format = DEC
 
 [group0-plot1-series1]
-name = left_mm
+name = debug_left_adc
 visibility = true
 format = DEC
 
 [group0-plot1-series2]
-name = right_mm
-visibility = true
-format = DEC
-
-[group0-plot2]
-name = new plot2
-type = 0
-visibility = true
-secondary_write_enabled = false
-
-[group0-plot2-series0]
-name = front_failure_count
-visibility = true
-format = DEC
-
-[group0-plot2-series1]
-name = left_failure_count
-visibility = true
-format = DEC
-
-[group0-plot2-series2]
-name = right_failure_count
+name = debug_right_adc
 visibility = true
 format = DEC
 
@@ -302,21 +235,6 @@ name = new plot0
 type = 0
 visibility = true
 secondary_write_enabled = false
-
-[group1-plot0-series0]
-name = front_mm
-visibility = true
-format = DEC
-
-[group1-plot0-series1]
-name = left_mm
-visibility = true
-format = DEC
-
-[group1-plot0-series2]
-name = right_mm
-visibility = true
-format = DEC
 
 [group1-plot1]
 name = new table0
@@ -333,21 +251,6 @@ name = new plot0
 type = 0
 visibility = true
 secondary_write_enabled = false
-
-[group2-plot0-series0]
-name = front_failure_count
-visibility = true
-format = DEC
-
-[group2-plot0-series1]
-name = left_failure_count
-visibility = true
-format = DEC
-
-[group2-plot0-series2]
-name = right_failure_count
-visibility = true
-format = DEC
 
 [group2-plot1]
 name = new table0

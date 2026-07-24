@@ -395,7 +395,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14|LED_D7_Pin|XSHUT_1_Pin|XSHUT_2_Pin
+  HAL_GPIO_WritePin(GPIOB, LED_D6_Pin|LED_D7_Pin|XSHUT_1_Pin|XSHUT_2_Pin
                           |XSHUT_3_Pin|XSHUT_4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -413,9 +413,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB14 LED_D7_Pin XSHUT_1_Pin XSHUT_2_Pin
+  /*Configure GPIO pins : LED_D6_Pin LED_D7_Pin XSHUT_1_Pin XSHUT_2_Pin
                            XSHUT_3_Pin XSHUT_4_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_14|LED_D7_Pin|XSHUT_1_Pin|XSHUT_2_Pin
+  GPIO_InitStruct.Pin = LED_D6_Pin|LED_D7_Pin|XSHUT_1_Pin|XSHUT_2_Pin
                           |XSHUT_3_Pin|XSHUT_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;

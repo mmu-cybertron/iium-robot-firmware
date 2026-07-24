@@ -15,7 +15,7 @@
 
 #include "main.h"
 
-#define EDGE_ESCAPE_DURATION_MS 600U
+#define EDGE_ESCAPE_DURATION_MS 700U //600
 #define EDGE_ESCAPE_BACKUP_MS 400U
 #define IR1_EDGE_TEST_ENABLE 0
 #define IR2_EDGE_TEST_ENABLE 0
@@ -70,22 +70,22 @@ static void opponent_debug_leds(const opponent_status_t *opponent)
 	(void)opponent;
 	return;
 #else
-	HAL_GPIO_WritePin(LED_D6_GPIO_Port,
-					  LED_D6_Pin,
-					  opponent->left ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED_D7_GPIO_Port,
-					  LED_D7_Pin,
-					  opponent->right ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED_D8_GPIO_Port,
-					  LED_D8_Pin,
-					  opponent->front ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	// HAL_GPIO_WritePin(LED_D6_GPIO_Port,
+	// 				  LED_D6_Pin,
+	// 				  opponent->left ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	// HAL_GPIO_WritePin(LED_D7_GPIO_Port,
+	// 				  LED_D7_Pin,
+	// 				  opponent->right ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	// HAL_GPIO_WritePin(LED_D8_GPIO_Port,
+	// 				  LED_D8_Pin,
+	// 				  opponent->front ? GPIO_PIN_SET : GPIO_PIN_RESET);
 #endif
 }
 
 #if EDGE_TEST
 static void edge_debug_show_accepted(void)
 {
-	HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_SET);
+	// HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_SET);
 }
 
 static void edge_debug_clear_unaccepted(void)
@@ -95,9 +95,9 @@ static void edge_debug_clear_unaccepted(void)
 #else
 	if (is_escaping == 0U)
 	{
-		HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_RESET);
+		// HAL_GPIO_WritePin(LED_D6_GPIO_Port, LED_D6_Pin, GPIO_PIN_RESET);
+		// HAL_GPIO_WritePin(LED_D7_GPIO_Port, LED_D7_Pin, GPIO_PIN_RESET);
+		// HAL_GPIO_WritePin(LED_D8_GPIO_Port, LED_D8_Pin, GPIO_PIN_RESET);
 	}
 #endif
 }
@@ -154,11 +154,11 @@ static void edge_escape_execute_blocking(void)
 
 	if (escape_mode == ROBOT_ESCAPE_FRONT)
 	{
-		motor_control_set_pwm(2000, 2000); // Drive forward to escape rear edge
+		motor_control_set_pwm(1750, 1750); // Drive forward to escape rear edge
 	}
 	else
 	{
-		motor_control_set_pwm(1000, 1000); // Drive backward to escape front edge
+		motor_control_set_pwm(1300, 1300); // Drive backward to escape front edge
 	}
 
 	motor_control_update();
@@ -470,13 +470,13 @@ void state_machine_update(void)
 	case ROBOT_STATE_TRACK_LEFT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1300, 1500);
+		motor_control_set_pwm(1300, 1700); // Spin left
 		break;
 
 	case ROBOT_STATE_TRACK_RIGHT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1500, 1300);
+		motor_control_set_pwm(1700, 1300); // Spin right
 		break;
 
 	case ROBOT_STATE_SEARCH:
@@ -484,81 +484,21 @@ void state_machine_update(void)
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
 
-		if (previous_state != ROBOT_STATE_SEARCH)
-		{
-			/* Fresh entry into SEARCH — always restart the sweep at "left". */
-			search_sweep_going_left = 1U;
-			search_sweep_bias_left = 1U;
-			search_phase_step = 0U;
-			search_sweep_phase_start_ms = now_ms;
+		/* As requested: If the opponent appears while sweeping, immediately become attack/track */
+		if (opponent.front == 1) {
+			current_state = ROBOT_STATE_ATTACK;
+			break;
+		} else if (opponent.left == 1) {
+			current_state = ROBOT_STATE_TRACK_LEFT;
+			break;
+		} else if (opponent.right == 1) {
+			current_state = ROBOT_STATE_TRACK_RIGHT;
+			break;
 		}
 
-		const uint32_t sweep_now_ms = HAL_GetTick();
-		const uint32_t phase_elapsed_ms = sweep_now_ms - search_sweep_phase_start_ms;
-
-		/* Which side gets the shorter flick vs the longer sweep swaps every
-		 * full left-right pair, so the net rotation cancels out over two
-		 * cycles instead of drifting continuously in one direction. */
-		const uint32_t left_phase_ms = search_sweep_bias_left ? SEARCH_SWEEP_LEFT_MS : SEARCH_SWEEP_RIGHT_MS;
-		const uint32_t right_phase_ms = search_sweep_bias_left ? SEARCH_SWEEP_RIGHT_MS : SEARCH_SWEEP_LEFT_MS;
-		uint32_t phase_duration_ms = search_sweep_going_left ? left_phase_ms : right_phase_ms;
-
-		if (search_phase_step == 0U || search_phase_step == 4U)
-		{
-			phase_duration_ms = SEARCH_SWEEP_LEFT_MS;
-		}
-		else if (search_phase_step == 1U || search_phase_step == 3U || search_phase_step == 5U)
-		{
-			phase_duration_ms = SEARCH_SWEEP_PAUSE_MS;
-		}
-		else if (search_phase_step == 2U)
-		{
-			phase_duration_ms = SEARCH_SWEEP_RIGHT_MS;
-		}
-
-		if (search_phase_step < 6U)
-		{
-			if (phase_elapsed_ms >= phase_duration_ms)
-			{
-				/* Just finished a right phase, about to go left again —
-				 * a full pair completed, so flip the bias for next pair. */
-				if (search_sweep_going_left == 0U)
-				{
-					search_sweep_bias_left = !search_sweep_bias_left;
-				}
-				search_sweep_going_left = !search_sweep_going_left;
-				search_sweep_phase_start_ms = sweep_now_ms;
-				search_phase_step++;
-			}
-		}
-
-		switch (search_phase_step)
-		{
-		case 0U:
-			motor_control_set_pwm(1800, 1200);
-			break;
-		case 1U:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		case 2U:
-			motor_control_set_pwm(1200, 1800);
-			break;
-		case 3U:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		case 4U:
-			motor_control_set_pwm(1800, 1200);
-			break;
-		case 5U:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		case 6U:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		default:
-			motor_control_set_pwm(1500, 1500);
-			break;
-		}
+		/* Continuous 360-degree slow spin to search for the opponent.
+		   Using 1700/1300 to ensure we have enough torque to overcome static friction on the mat! */
+		motor_control_set_pwm(1700, 1300); // Spin right slowly
 
 		motor_control_update();
 		break;

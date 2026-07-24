@@ -48,6 +48,11 @@ uint16_t line_sensor_read_adc(uint32_t channel)
     line_sensor_adc_init_once();
 
     ADC1->SQR3 = channel;
+    
+    // Tiny delay to let the analog multiplexer settle physically.
+    // Increased to 200 to give the capacitor even more time to discharge fully!
+    for (volatile int i = 0; i < 200; i++) { __NOP(); }
+    
     ADC1->SR = 0U;
     ADC1->CR2 |= ADC_CR2_SWSTART;
 
@@ -95,10 +100,27 @@ edge_status_t line_sensor_read_edges(void)
         	debug_edge_rear_right_adc = 4095;
         }
 
-    status.front_left = (debug_edge_left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
-    status.front_right = (debug_edge_right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
-    status.rear_left = (debug_edge_rear_left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
-    status.rear_right = (debug_edge_rear_right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
+    static uint8_t count_fl = 0;
+    static uint8_t count_fr = 0;
+    static uint8_t count_bl = 0;
+    static uint8_t count_br = 0;
+
+    // Software Debounce: Require 3 consecutive hits before triggering an edge escape
+    if (debug_edge_left_adc < IR_ANALOG_EDGE_THRESHOLD) { count_fl++; } else { count_fl = 0; }
+    if (debug_edge_right_adc < IR_ANALOG_EDGE_THRESHOLD) { count_fr++; } else { count_fr = 0; }
+    if (debug_edge_rear_left_adc < IR_ANALOG_EDGE_THRESHOLD) { count_bl++; } else { count_bl = 0; }
+    if (debug_edge_rear_right_adc < IR_ANALOG_EDGE_THRESHOLD) { count_br++; } else { count_br = 0; }
+
+    // Cap the counters so they don't overflow
+    if (count_fl > 2) count_fl = 2;
+    if (count_fr > 2) count_fr = 2;
+    if (count_bl > 2) count_bl = 2;
+    if (count_br > 2) count_br = 2;
+
+    status.front_left = (count_fl >= 2) ? 1U : 0U;
+    status.front_right = (count_fr >= 2) ? 1U : 0U;
+    status.rear_left = (count_bl >= 2) ? 1U : 0U;
+    status.rear_right = (count_br >= 2) ? 1U : 0U;
 
     return status;
 }
