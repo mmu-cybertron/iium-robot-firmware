@@ -4,7 +4,7 @@
 #include "main.h"
 #include <stdlib.h>
 
-#define ROBOT_TYPE 0 //1 is black fully while 0 is black with yellow inside
+#define ROBOT_TYPE 1 //0 is black fully while 1 is black with yellow inside
 
 extern ADC_HandleTypeDef hadc1;
 
@@ -19,7 +19,7 @@ volatile uint16_t debug_right_adc = 0;
 // A typical Sharp IR outputs higher voltage at closer distances.
 
 #if ROBOT_TYPE
-#define SHARP_IR_SIDE_MIN_ADC_THRESHOLD 200  // Minimum ADC value for Left/Right sensors
+#define SHARP_IR_SIDE_MIN_ADC_THRESHOLD 500  // Minimum ADC value for Left/Right sensors
 #define SHARP_IR_SIDE_MAX_ADC_THRESHOLD 4095  // Maximum ADC value for Left/Right sensors
 
 #define SHARP_IR_FRONT_MIN_ADC_THRESHOLD 500 // Minimum ADC value for Front sensor
@@ -62,6 +62,9 @@ static uint16_t filter_adc_spike(uint16_t current, uint16_t *spike_count)
     // Since we are moving fast, we only need 2 consistent readings.
     if (current >= SHARP_IR_SIDE_MIN_ADC_THRESHOLD) {
         (*spike_count)++;
+        if (*spike_count > 2) {
+            *spike_count = 2; // Cap to prevent overflow
+        }
         if (*spike_count >= 2) {
             return current; // Return the high value so it triggers!
         }
