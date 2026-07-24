@@ -2,6 +2,7 @@
 #include "robot_config.h"
 #include "usart1_log.h"
 #include "main.h"
+#include <stdlib.h>
 
 #define ROBOT_TYPE 0 //1 is black fully while 0 is black with yellow inside
 
@@ -54,6 +55,31 @@ static uint16_t read_adc_channel(uint32_t channel)
     return (uint16_t)(ADC1->DR & 0xFFF);
 }
 
+static uint16_t filter_adc_spike(uint16_t current, uint16_t *prev_raw, uint16_t *prev_valid)
+{
+    // A "spike" is defined as a sudden, massive jump. We use 200 ADC points as the threshold.
+    const int SPIKE_THRESHOLD = 200; 
+    
+    // Check how far the current reading jumped from our accepted 'valid' reading
+    if (abs((int)current - (int)*prev_valid) > SPIKE_THRESHOLD) {
+        // The reading jumped massively. 
+        // If it's just a 1-sample noise spike, we ignore it.
+        // But if an opponent actually appeared, we MUST accept it.
+        // We know it's a real opponent if two raw readings in a row confirm the massive jump.
+        if (abs((int)current - (int)*prev_raw) <= SPIKE_THRESHOLD) {
+            *prev_valid = current; // 2 readings confirmed it. Accept the jump!
+        }
+    } else {
+        // Normal, smooth change. Accept it.
+        *prev_valid = current;
+    }
+    
+    // Always store the raw reading for the next cycle
+    *prev_raw = current;
+    
+    return *prev_valid;
+}
+
 static uint8_t is_opponent_detected(uint16_t adc_val, uint16_t min_thresh, uint16_t max_thresh)
 {
     if (adc_val >= min_thresh && adc_val <= max_thresh) {
@@ -88,15 +114,22 @@ void distance_sensor_init(void)
 
 opponent_status_t distance_sensor_read_opponent(void)
 {
-    // Read the three ADC channels
-    // PA7 -> Left -> ADC1_IN7
-    // PA2 -> Front -> ADC1_IN2
-    // PA3 -> Right -> ADC1_IN3
-    uint16_t left_adc = read_adc_channel(ADC_CHANNEL_7);
-    uint16_t front_adc = read_adc_channel(ADC_CHANNEL_2);
-    uint16_t right_adc = read_adc_channel(ADC_CHANNEL_3);
+    // Read the three raw ADC channels
+    uint16_t raw_left_adc = read_adc_channel(ADC_CHANNEL_7);
+    uint16_t raw_front_adc = read_adc_channel(ADC_CHANNEL_2);
+    uint16_t raw_right_adc = read_adc_channel(ADC_CHANNEL_3);
+    
+    // Static variables to hold the filter state across loops
+    static uint16_t prev_raw_L = 0, prev_valid_L = 0;
+    static uint16_t prev_raw_F = 0, prev_valid_F = 0;
+    static uint16_t prev_raw_R = 0, prev_valid_R = 0;
+    
+    // Apply the robust spike filter
+    uint16_t left_adc = filter_adc_spike(raw_left_adc, &prev_raw_L, &prev_valid_L);
+    uint16_t front_adc = filter_adc_spike(raw_front_adc, &prev_raw_F, &prev_valid_F);
+    uint16_t right_adc = filter_adc_spike(raw_right_adc, &prev_raw_R, &prev_valid_R);
 
-    // Save to globals so they can be viewed in Live Expressions
+    // Save the FILTERED values to globals so they can be viewed in Live Expressions
     debug_left_adc = left_adc;
     debug_front_adc = front_adc;
     debug_right_adc = right_adc;

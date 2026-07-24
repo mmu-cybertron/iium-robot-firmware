@@ -135,8 +135,9 @@ void app_main(void)
      * jump back to mode selection instead of falling through to the game.
      */
     uint8_t mode_confirmed = 0;
+    uint8_t mode_bypassed = 0;
 
-    while (!mode_confirmed) {
+    while (!mode_confirmed && !mode_bypassed) {
         /* ----- PHASE 1: MODE SELECTION ----- */
         LOG_PRINT("\n========================================\r\n");
         LOG_PRINT("--- MODE SELECTION PHASE ---\r\n");
@@ -152,6 +153,13 @@ void app_main(void)
                 break;
             }
 
+            /* Bypass if start module is triggered early */
+            if (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) == GPIO_PIN_SET) {
+                LOG_PRINT("Start module triggered! Bypassing mode selection.\r\n");
+                mode_bypassed = 1;
+                break;
+            }
+
             /* Background tasks while selecting */
             const uint32_t now_ms = HAL_GetTick();
             if ((now_ms - last_update_ms) >= ROBOT_UPDATE_PERIOD_MS) {
@@ -161,48 +169,55 @@ void app_main(void)
         }
 
         /* ----- PHASE 2: WAIT FOR SM_SIGNAL START ----- */
-        LOG_PRINT("\n--- WAITING FOR START SIGNAL ---\r\n");
-        LOG_PRINT("Waiting for SM_Signal_Pin HIGH to start game...\r\n");
-        LOG_PRINT("(Hold PB13 for 2s to unlock and re-select mode)\r\n");
+        if (!mode_bypassed) {
+            LOG_PRINT("\n--- WAITING FOR START SIGNAL ---\r\n");
+            LOG_PRINT("Waiting for SM_Signal_Pin HIGH to start game...\r\n");
+            LOG_PRINT("(Hold PB13 for 2s to unlock and re-select mode)\r\n");
 
-        while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
-            /* Keep servicing the selector so PB13 long-press can unlock */
-            game_mode_selector_update();
+            while (HAL_GPIO_ReadPin(SM_Signal_GPIO_Port, SM_Signal_Pin) != GPIO_PIN_SET) {
+                /* Keep servicing the selector so PB13 long-press can unlock */
+                game_mode_selector_update();
 
-            if (!game_mode_selector_is_locked()) {
-                LOG_PRINT("Mode UNLOCKED. Returning to mode selection...\r\n");
-                break;
+                if (!game_mode_selector_is_locked()) {
+                    LOG_PRINT("Mode UNLOCKED. Returning to mode selection...\r\n");
+                    break;
+                }
+
+                HAL_Delay(10);
+                robot_background();
             }
 
-            HAL_Delay(10);
-            robot_background();
+            if (game_mode_selector_is_locked()) {
+                mode_confirmed = 1;
+            }
         }
-
-        if (game_mode_selector_is_locked()) {
-            mode_confirmed = 1;
-        }
-        /* else: loop back and re-run Phase 1 from scratch */
+        /* else: loop back and re-run Phase 1 from scratch if not bypassed/confirmed */
     }
 
     LOG_PRINT("SM_Signal_Pin HIGH! Game starting...\r\n");
     last_update_ms = HAL_GetTick();
 
     /* ===== PHASE 3: EXECUTE INITIAL MOVE ===== */
-    LOG_PRINT("\n--- INITIAL MOVE PHASE ---\r\n");
-    LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
+    if (!mode_bypassed) {
+        LOG_PRINT("\n--- INITIAL MOVE PHASE ---\r\n");
+        LOG_PRINT("Executing initial move (Mode %d)...\r\n", (int)game_mode_selector_get_mode());
 
-    /* Force the first call to start the move */
-    game_mode_selector_execute_initial_move();
-
-    while (!game_mode_selector_is_initial_move_done()) {
-        /* Call initial move executor */
+        /* Force the first call to start the move */
         game_mode_selector_execute_initial_move();
 
-        /* CRITICAL: Update motor PWM every iteration */
-        motor_control_update();
-    }
+        while (!game_mode_selector_is_initial_move_done()) {
+            /* Call initial move executor */
+            game_mode_selector_execute_initial_move();
 
-    LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+            /* CRITICAL: Update motor PWM every iteration */
+            motor_control_update();
+        }
+
+        LOG_PRINT("Initial move complete. Entering state machine...\r\n");
+    } else {
+        LOG_PRINT("Skipping initial move due to bypass. Entering normal state machine...\r\n");
+    }
+    
     last_update_ms = HAL_GetTick();
 #else
     LOG_PRINT("\n--- WAITING FOR START SIGNAL ---\r\n");

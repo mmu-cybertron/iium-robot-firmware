@@ -11,7 +11,7 @@
 #define IR_BL_ADC_CHANNEL 6U
 #define IR_BR_ADC_CHANNEL 5U
 #else
-#define IR_ANALOG_EDGE_THRESHOLD 1000U
+#define IR_ANALOG_EDGE_THRESHOLD 300U //lower = whiter
 #define IR_ANALOG_TIMEOUT_MS 1U
 #define IR_FL_ADC_CHANNEL 8U
 #define IR_FR_ADC_CHANNEL 9U
@@ -78,7 +78,22 @@ edge_status_t line_sensor_read_edges(void)
     debug_edge_rear_left_adc = line_sensor_read_adc(IR_BL_ADC_CHANNEL);
     debug_edge_rear_right_adc = line_sensor_read_adc(IR_BR_ADC_CHANNEL);
 
-
+    if (debug_edge_left_adc == 0)
+    {
+    	debug_edge_left_adc = 4095;
+    }
+    if (debug_edge_right_adc == 0)
+        {
+        	debug_edge_right_adc = 4095;
+        }
+    if (debug_edge_rear_left_adc == 0)
+        {
+        	debug_edge_rear_left_adc = 4095;
+        }
+    if (debug_edge_rear_right_adc == 0)
+        {
+        	debug_edge_rear_right_adc = 4095;
+        }
 
     status.front_left = (debug_edge_left_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
     status.front_right = (debug_edge_right_adc < IR_ANALOG_EDGE_THRESHOLD) ? 1U : 0U;
