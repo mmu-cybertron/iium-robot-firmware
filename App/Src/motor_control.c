@@ -53,4 +53,5 @@ void motor_control_set_pwm(int16_t left_pwm, int16_t right_pwm)
 {
     current_command.left_pwm = clamp_pwm(left_pwm);
     current_command.right_pwm = clamp_pwm(right_pwm);
+    motor_driver_set_pwm(left_pwm, right_pwm);
 }

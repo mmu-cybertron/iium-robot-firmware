@@ -24,8 +24,8 @@ extern uint32_t HAL_GetTick(void);
 #define INITIAL_MOVE_MODE1_DURATION_MS   2000  // Turn left 1s + forward 1s
 #define INITIAL_MOVE_MODE2_DURATION_MS   2000  // Turn right 1s + forward 1s
 #define INITIAL_MOVE_MODE3_DURATION_MS   1000  // Forward 1s
-#define TURN_DURATION_MS         1000
-#define FORWARD_DURATION_MS      1000
+#define TURN_DURATION_MS         500
+#define FORWARD_DURATION_MS      500
 
 /* Motor command definitions
  *
@@ -252,7 +252,8 @@ void game_mode_selector_execute_initial_move(void)
             if (initial_move_phase == 1) {
                 if (elapsed_ms < TURN_DURATION_MS) {
                     /* Turn left */
-                	motor_control_set_pwm(1600, 1950);
+            		motor_control_set_pwm(1200, 1800); // Spin left (perfectly balanced 300 speed)
+
 //                    cmd.left_pwm = MOTOR_TURN_LEFT_PWM_L;
 //                    cmd.right_pwm = MOTOR_TURN_LEFT_PWM_R;
 //                    motor_control_set_command(cmd);
@@ -263,8 +264,9 @@ void game_mode_selector_execute_initial_move(void)
             } else if (initial_move_phase == 2) {
                 elapsed_ms = now_ms - initial_move_start_time;
                 if (elapsed_ms < FORWARD_DURATION_MS) {
-//                    /* Move forward */
-                	motor_control_set_pwm(1950, 1950);
+                    /* Move forward */
+            		motor_control_set_pwm(2250, 2250);
+
 //                    cmd.left_pwm = MOTOR_FORWARD_PWM;
 //                    cmd.right_pwm = MOTOR_FORWARD_PWM;
 //                    motor_control_set_command(cmd);
@@ -282,8 +284,8 @@ void game_mode_selector_execute_initial_move(void)
             /* Turn right 1s, then move forward 1s */
             if (initial_move_phase == 1) {
                 if (elapsed_ms < TURN_DURATION_MS) {
-//                    /* Turn right */
-                	motor_control_set_pwm(1950, 1600);
+                    /* Turn right */
+            		motor_control_set_pwm(1800, 1200); // Spin right (perfectly balanced 300 speed)
 
 //                    cmd.left_pwm = MOTOR_TURN_RIGHT_PWM_L;
 //                    cmd.right_pwm = MOTOR_TURN_RIGHT_PWM_R;
@@ -296,10 +298,10 @@ void game_mode_selector_execute_initial_move(void)
                 elapsed_ms = now_ms - initial_move_start_time;
                 if (elapsed_ms < FORWARD_DURATION_MS) {
                     /* Move forward */
-                	motor_control_set_pwm(1950, 1950);
+            		motor_control_set_pwm(2250, 2250);
 //                    cmd.left_pwm = MOTOR_FORWARD_PWM;
 //                    cmd.right_pwm = MOTOR_FORWARD_PWM;
-//                   motor_control_set_command(cmd);
+//                    motor_control_set_command(cmd);
                 } else {
                     /* Done */
                     motor_control_stop();
@@ -313,8 +315,9 @@ void game_mode_selector_execute_initial_move(void)
         case GAME_MODE_3:
             /* Move forward 1s only */
             if (elapsed_ms < INITIAL_MOVE_MODE3_DURATION_MS) {
+        		motor_control_set_pwm(2250, 2250);
 
-            	motor_control_set_pwm(1950, 1950);
+
 //                cmd.left_pwm = MOTOR_FORWARD_PWM;
 //                cmd.right_pwm = MOTOR_FORWARD_PWM;
 //                motor_control_set_command(cmd);
