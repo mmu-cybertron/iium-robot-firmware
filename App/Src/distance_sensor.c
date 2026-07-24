@@ -4,7 +4,7 @@
 #include "main.h"
 #include <stdlib.h>
 
-#define ROBOT_TYPE 1 //0 is black fully while 1 is black with yellow inside
+#define ROBOT_TYPE 0 //1 is black fully while 0 is black with yellow inside
 
 extern ADC_HandleTypeDef hadc1;
 

@@ -158,7 +158,7 @@ static void edge_escape_execute_blocking(void)
 	}
 	else
 	{
-		motor_control_set_pwm(1300, 1300); // Drive backward to escape front edge
+		motor_control_set_pwm(1150, 1150); // Drive backward to escape front edge
 	}
 
 	motor_control_update();
