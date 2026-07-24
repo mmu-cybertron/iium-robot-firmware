@@ -15,8 +15,8 @@
 
 #include "main.h"
 
-#define EDGE_ESCAPE_DURATION_MS 700U //600
-#define EDGE_ESCAPE_BACKUP_MS 400U
+#define EDGE_ESCAPE_DURATION_MS 900U //600
+#define EDGE_ESCAPE_BACKUP_MS 600U
 #define IR1_EDGE_TEST_ENABLE 0
 #define IR2_EDGE_TEST_ENABLE 0
 #define IR1_EDGE_DETECTED_STATE GPIO_PIN_RESET
@@ -295,7 +295,7 @@ void state_machine_update(void)
 	const edge_status_t edge = edge_detector_get_status();
 #endif
 	const uint32_t now_ms = HAL_GetTick();
-	uint8_t front_seen_or_latched = opponent.front;
+	uint8_t front_seen_or_latched = opponent.front || (opponent.left == 1 && opponent.right == 1);
 	uint8_t attack_requested = 0U;
 
 

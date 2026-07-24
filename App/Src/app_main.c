@@ -211,6 +211,9 @@ void app_main(void)
 
             /* CRITICAL: Update motor PWM every iteration */
             motor_control_update();
+
+            HAL_Delay(10);
+            robot_background();
         }
 
         LOG_PRINT("Initial move complete. Entering state machine...\r\n");

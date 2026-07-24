@@ -105,7 +105,7 @@ edge_status_t line_sensor_read_edges(void)
     static uint8_t count_bl = 0;
     static uint8_t count_br = 0;
 
-    // Software Debounce: Require 3 consecutive hits before triggering an edge escape
+    // Software Debounce: Require 2 consecutive hits before triggering an edge escape
     if (debug_edge_left_adc < IR_ANALOG_EDGE_THRESHOLD) { count_fl++; } else { count_fl = 0; }
     if (debug_edge_right_adc < IR_ANALOG_EDGE_THRESHOLD) { count_fr++; } else { count_fr = 0; }
     if (debug_edge_rear_left_adc < IR_ANALOG_EDGE_THRESHOLD) { count_bl++; } else { count_bl = 0; }

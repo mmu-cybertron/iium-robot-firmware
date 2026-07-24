@@ -25,7 +25,7 @@ volatile uint16_t debug_right_adc = 0;
 #define SHARP_IR_FRONT_MIN_ADC_THRESHOLD 500 // Minimum ADC value for Front sensor
 #define SHARP_IR_FRONT_MAX_ADC_THRESHOLD 4095 // Maximum ADC value for Front sensor
 #else
-#define SHARP_IR_SIDE_MIN_ADC_THRESHOLD 400  // Minimum ADC value for Left/Right sensors
+#define SHARP_IR_SIDE_MIN_ADC_THRESHOLD 300  // Minimum ADC value for Left/Right sensors
 #define SHARP_IR_SIDE_MAX_ADC_THRESHOLD 4095  // Maximum ADC value for Left/Right sensors
 
 #define SHARP_IR_FRONT_MIN_ADC_THRESHOLD 500 // Minimum ADC value for Front sensor
