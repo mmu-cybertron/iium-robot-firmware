@@ -23,7 +23,7 @@ extern uint32_t HAL_GetTick(void);
 #define DEBOUNCE_MS              20
 #define INITIAL_MOVE_MODE1_DURATION_MS   2000  // Turn left 1s + forward 1s
 #define INITIAL_MOVE_MODE2_DURATION_MS   2000  // Turn right 1s + forward 1s
-#define INITIAL_MOVE_MODE3_DURATION_MS   500  // Forward 1s
+#define INITIAL_MOVE_MODE3_DURATION_MS   650  // Forward 1s
 #define TURN_DURATION_MS         50 //robot 2 (100) Robot 1 (200)
 #define FORWARD_DURATION_MS      350 //robot 2 (350) Robot 1 (500)
 

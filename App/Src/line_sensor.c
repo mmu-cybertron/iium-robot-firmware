@@ -11,7 +11,7 @@
 #define IR_BL_ADC_CHANNEL 6U
 #define IR_BR_ADC_CHANNEL 5U
 #else
-#define IR_ANALOG_EDGE_THRESHOLD 300U //lower = whiter
+#define IR_ANALOG_EDGE_THRESHOLD 400U //lower = whiter
 #define IR_ANALOG_TIMEOUT_MS 1U
 #define IR_FL_ADC_CHANNEL 8U
 #define IR_FR_ADC_CHANNEL 9U

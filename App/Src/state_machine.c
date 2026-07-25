@@ -462,7 +462,7 @@ void state_machine_update(void)
 	case ROBOT_STATE_ATTACK:
 	{
 		stop_command_sent = 0U;
-		motor_control_set_pwm(1750, 1750);
+		motor_control_set_pwm(2100, 2100);
 		opponent_debug_leds(&opponent);
 		break;
 	}
@@ -470,13 +470,13 @@ void state_machine_update(void)
 	case ROBOT_STATE_TRACK_LEFT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1300, 1700); // Spin left
+		motor_control_set_pwm(1150, 1850); // Spin left
 		break;
 
 	case ROBOT_STATE_TRACK_RIGHT:
 		stop_command_sent = 0U;
 		opponent_debug_leds(&opponent);
-		motor_control_set_pwm(1700, 1300); // Spin right
+		motor_control_set_pwm(1850, 1150); // Spin right
 		break;
 
 	case ROBOT_STATE_SEARCH:
